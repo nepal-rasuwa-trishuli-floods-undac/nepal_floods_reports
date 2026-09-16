@@ -30,6 +30,7 @@ library(maptiles)
 library(cowplot)
 library(ggview)
 library(flextable)
+library(DT)
 
 options(warn = -1)
 
@@ -380,15 +381,39 @@ consolidated |>
 
 <br><br><br>
 
-## References and useful datasets
+# References and useful datasets
 
-### [Consolidated Census ward-level household and population](https://drive.google.com/drive/folders/1gNkJJR6Q4psoCrWyBcUyzqL9wcKVVRbb?usp=drive_link)
+## Interactive Reference Table
+
+```{r}
+census_flat |> 
+  filter(district == "Rasuwa") |>
+  select(municipality, ward,
+         total_households, population_total, sex_ratio, 
+         population_density, total_children_5_17, 
+         population_male, population_female, 
+         total_dependency_ratio, 
+         adm3_pcode) |> 
+  mutate_at(vars(sex_ratio, population_density), ~ round(.x, 2)) |> 
+    datatable(filter = list(position = "top", clear = FALSE), 
+              options = list(pageLength = 10, scrollX = TRUE),
+              caption = htmltools::tags$caption(style = "caption-side: top;
+                                              text-align: center; font-size: 140%;",
+                                              "Selected Demographic Census Variables"))
+ 
+```
+
+<br><br><br>
+
+## [Consolidated Census ward-level household and population](https://drive.google.com/drive/folders/1gNkJJR6Q4psoCrWyBcUyzqL9wcKVVRbb?usp=drive_link)
 Variables include a breakdown of housing materials, wealth quintile, school attendance and household WASH. 
 
-### [Logistics Cluster Access Map](https://logie.logcluster.org/?op=npl)
+## [Logistics Cluster Access Map](https://logie.logcluster.org/?op=npl)
 Work is ongoing. 
 
-### [Geodata](https://drive.google.com/drive/folders/1_QuN6UTia2irDmADubMoklrvTptL9gbu?usp=drive_link)
+## [Geodata](https://drive.google.com/drive/folders/1_QuN6UTia2irDmADubMoklrvTptL9gbu?usp=drive_link)
 Includes ward-level shapefiles and settlement points.
 
-### [Digitised NDRRMA Municipal Damage Tables](https://drive.google.com/drive/folders/1GehdusDNji6HGQGQ6R7cEHNJC3BwwNau?usp=drive_link)
+## [Digitised NDRRMA Municipal Damage Tables](https://drive.google.com/drive/folders/1GehdusDNji6HGQGQ6R7cEHNJC3BwwNau?usp=drive_link)
+
+## [5W Dashboard](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
