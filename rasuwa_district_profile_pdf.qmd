@@ -360,9 +360,10 @@ Sector presence, however, tells a very different story from where beneficiary fr
 
 <br>
 
-```{r}
+![](./plots/rasuwa_agency_table.png)
 
-#| tbl-colwidths: [15, 15, 15, 55]
+```{r eval=FALSE}
+
 
 consolidated |> 
   filter(district == "Rasuwa") |> 
@@ -394,6 +395,7 @@ consolidated |>
   summarise(num_agencies = n_distinct(agencies),
             agencies = paste0(agencies, collapse = ", "), 
             .groups = "drop") |> 
+  mutate(agencies = str_wrap(agencies, width = 50)) |> 
   select(-adm2_pcode, -adm3_pcode) |> 
   kable(caption = "Agencies by municipality") |> 
   kable_classic(full_width = F) |> 
