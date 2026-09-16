@@ -243,11 +243,9 @@ population_projections <- read_csv("./data/population_projections_2026_affected_
 
 <br>
 
-The [population](https://censusresults.nsonepal.gov.np/) of Rasuwa district is `r filter(differences, district == "Rasuwa") %>% {sum(.$projection_2026_population_total)}  |> format(big.mark = ",")`. 
+The [population](https://censusresults.nsonepal.gov.np/) of Rasuwa district is `r filter(differences, district == "Rasuwa") %>% {sum(.$projection_2026_population_total)}  |> format(big.mark = ",")`. Of the `r census_flat |> filter(district == "Rasuwa") |> nrow()` wards in Rasuwa district, `r differences |> filter(district == "Rasuwa") |> nrow()` have been affected by the flooding, according to the NDRRMA. 
 
-Of the `r census_flat |> filter(district == "Rasuwa") |> nrow()` wards in Rasuwa district, `r differences |> filter(district == "Rasuwa") |> nrow()` have been affected by the flooding, according to the NDRRMA. 
-
-With reference to the plot below, 20% (2,225) out of the 11,131 [households](https://censusresults.nsonepal.gov.np/) in Rasuwa are in the poorest quintile nationally, in line with the average for Nepal. Of the affected wards, Gosaikunda-1 and Uttargaya-1 are of particular concern, given the particularly high percentages of their populations who are in the poorest quintile nationally. 
+20% (2,225) out of the 11,131 [households](https://censusresults.nsonepal.gov.np/) in Rasuwa are in the poorest quintile of households nationally, in line with the average for Nepal. Of the affected wards, Gosaikunda-1 and Uttargaya-1 are of particular concern, given the particularly high percentages of their populations who are in the poorest quintile nationally. 
 
 As of the 2021 Census, there were `r filter(census_flat, district == "Rasuwa")  %>% {sum(.$population_with_disabilities, na.rm = TRUE)} |> format(big.mark = ",")` people with disabilities in the district, though it should be noted that this figure relies on self-reporting, so the actual number might be much higher.
 
@@ -279,10 +277,13 @@ municipal_damage_losses |>
   select(municipality, 
          Businesses_affected = estimated_affected_establishments, 
          Total_damage_incl._households_assets_npr_crore = total_damage_including_household_assets_npr_crore) |> 
-  arrange(desc(Total_damage_incl._households_assets_npr_crore)) |> 
-  flextable() |> 
-  theme_zebra() |> 
-  flextable::set_caption(as_paragraph(as_chunk("Economic impacts and losses in Rasuwa")))
+  arrange(desc(Total_damage_incl._households_assets_npr_crore)) |>
+  kable(caption = "Economic impacts and losses in Rasuwa") |> 
+  kable_classic(full_width = F) |> 
+  kable_styling(bootstrap_options = "striped")
+ # flextable() |> 
+ # theme_zebra() |> 
+ # flextable::set_caption(as_paragraph(as_chunk("Economic impacts and losses in Rasuwa")))
 ```
 
 <br><br><br>
@@ -329,10 +330,13 @@ consolidated |>
   mutate(pc_with_ward = ifelse(no_ward == 0 & ward_reported == 0, 
                                0, 
                                round(ward_reported / (ward_reported + no_ward) * 100, 2))) |> 
+  kable(caption = "Ward-level reporting of beneficiary frequencies") |> 
+  kable_classic(full_width = F) |> 
+  kable_styling(bootstrap_options = "striped")
 
-  flextable() |> 
-  theme_zebra() |> 
-  flextable::set_caption(as_paragraph(as_chunk("Ward-level reporting of beneficiary frequencies")))
+ # flextable() |> 
+ # theme_zebra() |> 
+ # flextable::set_caption(as_paragraph(as_chunk("Ward-level reporting of beneficiary frequencies")))
 ```
 
 <br><br><br>
@@ -380,10 +384,14 @@ consolidated |>
             agencies = paste0(agencies, collapse = ", "), 
             .groups = "drop") |> 
   select(-adm2_pcode, -adm3_pcode) |> 
-  flextable() |> 
-  theme_zebra() |> 
-  flextable::set_caption(as_paragraph(as_chunk("Agencies by municipality")))|> 
-  flextable::autofit()
+  kable(caption = "Agencies by municipality") |> 
+  kable_classic(full_width = TRUE) |> 
+  kable_styling(bootstrap_options = "striped")
+
+ # flextable() |> 
+ # theme_zebra() |> 
+ # flextable::set_caption(as_paragraph(as_chunk("Agencies by municipality")))|> 
+ # flextable::autofit()
 ```
 
 <br><br><br>

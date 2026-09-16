@@ -251,7 +251,7 @@ The [population](https://censusresults.nsonepal.gov.np/) of Rasuwa district is `
 
 Of the `r census_flat |> filter(district == "Rasuwa") |> nrow()` wards in Rasuwa district, `r differences |> filter(district == "Rasuwa") |> nrow()` have been affected by the flooding, according to the NDRRMA. 
 
-With reference to the plot below, 20% (2,225) out of the 11,131 [households](https://censusresults.nsonepal.gov.np/) in Rasuwa are in the poorest quintile nationally, in line with the average for Nepal. Of the affected wards, Gosaikunda-1 and Uttargaya-1 are of particular concern, given the particularly high percentages of their populations who are in the poorest quintile nationally. 
+20% (2,225) out of the 11,131 [households](https://censusresults.nsonepal.gov.np/) in Rasuwa are in the poorest quintile of households nationally, in line with the average for Nepal. Of the affected wards, Gosaikunda-1 and Uttargaya-1 are of particular concern, given the particularly high percentages of their populations who are in the poorest quintile nationally. 
 
 As of the 2021 Census, there were `r filter(census_flat, district == "Rasuwa")  %>% {sum(.$population_with_disabilities, na.rm = TRUE)} |> format(big.mark = ",")` people with disabilities in the district, though it should be noted that this figure relies on self-reporting, so the actual number might be much higher.
 
