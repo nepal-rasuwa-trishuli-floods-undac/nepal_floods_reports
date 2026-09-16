@@ -4,7 +4,7 @@
     "href": "rasuwa_district_profile.html",
     "title": "Rasuwa District Profile",
     "section": "",
-    "text": "The population of Rasuwa district is 23,430.\nOf the 27 wards in Rasuwa district, 15 have been affected by the flooding, according to the NDRRMA.\nWith reference to the plot below, 20% (2,225) out of the 11,131 households in Rasuwa are in the poorest quintile nationally, in line with the average for Nepal. Of the affected wards, Gosaikunda-1 and Uttargaya-1 are of particular concern, given the particularly high percentages of their populations who are in the poorest quintile nationally."
+    "text": "The population of Rasuwa district is 23,430.\nOf the 27 wards in Rasuwa district, 15 have been affected by the flooding, according to the NDRRMA.\nWith reference to the plot below, 20% (2,225) out of the 11,131 households in Rasuwa are in the poorest quintile nationally, in line with the average for Nepal. Of the affected wards, Gosaikunda-1 and Uttargaya-1 are of particular concern, given the particularly high percentages of their populations who are in the poorest quintile nationally.\nAs of the 2021 Census, there were 1,290 people with disabilities in the district, though it should be noted that this figure relies on self-reporting, so the actual number might be much higher."
   },
   {
     "objectID": "rasuwa_district_profile.html#agency-presence",
@@ -12,5 +12,12 @@
     "title": "Rasuwa District Profile",
     "section": "Agency presence",
     "text": "Agency presence\n\n\nSector presence, however, tells a very different story from where beneficiary frequencies were reached. Somewhat commonsensically, agency presence is highest in Uttargaya, the most accessible part of the district. It should also be mentioned that Dhunche, the district seat and the location of the District Administration Office, is located in the lower reaches of Gosaikunda.\n\n\n\ndistrictmunicipalitynum_agenciesagenciesRasuwaAamachhodingmo3CBM, KOSHISH, HRDCRasuwaGosaikunda24AWO International, CARDSN, CBM, KOSHISH, HRDC, CMC-Nepal, GEI ASIA, HAPSA Nepal, IOM, PLAN, DEPROSC Nepal, SCoN, UNDP, UNFPA, UNICEF, WFP, WHH, ASN, RRN, WHO, LG, WVI, KIRDARC Nepal, AH&HRasuwaUttargaya40ActionAid, ADRA, GCYCN, BN, CARE Nepal, CSRC, CBM, KOSHISH, HRDC, CIN, UNICEF, CMC-Nepal, CRS, Caritas, Fastenaktion, WJR, HELVETAS Nepal, CWIN, FAO, GEI ASIA, Habitat for Humanity, HAPSA Nepal, IOM, IRW, PIN, PLAN, DEPROSC Nepal, Save the children, SCoN, Shanti Foundation, TPO, UN Women, ROYM, UNDP, UNFPA, NRCS, WHH, RRN, WVI, KIRDARC NepalRasuwaKalika15CBM, KOSHISH, HRDC, CMC-Nepal, UNICEF, CWIN, IOM, IRW, PLAN, DEPROSC Nepal, UNDP, WFP, WHH, RRN, LGRasuwaNaukunda2WVI, KIRDARC NepalRasuwaLangtang National Park1WFP"
+  },
+  {
+    "objectID": "rasuwa_district_profile.html#references-and-useful-datasets",
+    "href": "rasuwa_district_profile.html#references-and-useful-datasets",
+    "title": "Rasuwa District Profile",
+    "section": "References and useful datasets",
+    "text": "References and useful datasets\n\nConsolidated Census ward-level household and population\nVariables include a breakdown of housing materials, wealth quintile, school attendance and household WASH.\n\n\nLogistics Cluster Access Map\nWork is ongoing.\n\n\nGeodata\nIncludes ward-level shapefiles and settlement points.\n\n\nDigitised NDRRMA Municipal Damage Tables"
   }
 ]

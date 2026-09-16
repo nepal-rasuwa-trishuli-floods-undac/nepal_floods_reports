@@ -238,7 +238,7 @@ population_projections <- read_csv("./data/population_projections_2026_affected_
 # Introduction
 
 
-![](./plots/rasuwa_population_map.png)
+[![](./plots/rasuwa_population_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_population_map.png)
 
 <br>
 
@@ -248,15 +248,19 @@ Of the `r census_flat |> filter(district == "Rasuwa") |> nrow()` wards in Rasuwa
 
 With reference to the plot below, 20% (2,225) out of the 11,131 [households](https://censusresults.nsonepal.gov.np/) in Rasuwa are in the poorest quintile nationally, in line with the average for Nepal. Of the affected wards, Gosaikunda-1 and Uttargaya-1 are of particular concern, given the particularly high percentages of their populations who are in the poorest quintile nationally. 
 
+As of the 2021 Census, there were `r filter(census_flat, district == "Rasuwa")  %>% {sum(.$population_with_disabilities, na.rm = TRUE)} |> format(big.mark = ",")` people with disabilities in the district, though it should be noted that this figure relies on self-reporting, so the actual number might be much higher.
+
 <br>
 
-![](./plots/rasuwa_poorest_quintile_map.png)
+[![](./plots/rasuwa_poorest_quintile_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_poorest_quintile_map.png)
+
 
 <br><br><br>
 
 # Needs
 
-![](./plots/rasuwa_impacted_buildings.png)
+[![](./plots/rasuwa_impacted_buildings.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_impacted_buildings.png)
+
 
 <br>
 
@@ -284,7 +288,8 @@ municipal_damage_losses |>
 
 # Response
 
-![](./plots/rasuwa_reached_map.png)
+[![](./plots/rasuwa_reached_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_reached_map.png)
+
 
 <br>
 
@@ -294,7 +299,7 @@ However, we still lack more granular data. As can be seen from the table below, 
 
 <br>
 
-```{r}
+```{r frequencies-table}
 consolidated |> 
   filter(district == "Rasuwa") |> 
   mutate(has_ward = case_when(
@@ -326,7 +331,8 @@ consolidated |>
 
 ## Agency presence
 
-![](./plots/rasuwa_sector_agencies_facet_map.png)
+[![](./plots/rasuwa_sector_agencies_facet_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_sector_agencies_facet_map.png)
+
 
 <br>
 
@@ -372,3 +378,17 @@ consolidated |>
   flextable::autofit()
 ```
 
+<br><br><br>
+
+## References and useful datasets
+
+### [Consolidated Census ward-level household and population](https://drive.google.com/drive/folders/1gNkJJR6Q4psoCrWyBcUyzqL9wcKVVRbb?usp=drive_link)
+Variables include a breakdown of housing materials, wealth quintile, school attendance and household WASH. 
+
+### [Logistics Cluster Access Map](https://logie.logcluster.org/?op=npl)
+Work is ongoing. 
+
+### [Geodata](https://drive.google.com/drive/folders/1_QuN6UTia2irDmADubMoklrvTptL9gbu?usp=drive_link)
+Includes ward-level shapefiles and settlement points.
+
+### [Digitised NDRRMA Municipal Damage Tables](https://drive.google.com/drive/folders/1GehdusDNji6HGQGQ6R7cEHNJC3BwwNau?usp=drive_link)
