@@ -2,6 +2,10 @@
 title: "Rasuwa District Profile"
 author: "iMMAP"
 date-modified: "16 September 2026"
+format: pdf
+logo:
+  images:
+    light: brand/combined_logos.png
 execute: 
   echo: false
 ---
@@ -30,7 +34,7 @@ library(maptiles)
 library(cowplot)
 library(ggview)
 library(flextable)
-library(DT)
+library(tinytex)
 
 options(warn = -1)
 
@@ -280,9 +284,9 @@ municipal_damage_losses |>
          Businesses_affected = estimated_affected_establishments, 
          Total_damage_incl._households_assets_npr_crore = total_damage_including_household_assets_npr_crore) |> 
   arrange(desc(Total_damage_incl._households_assets_npr_crore)) |> 
-  flextable() |> 
-  theme_zebra() |> 
-  flextable::set_caption(as_paragraph(as_chunk("Economic impacts and losses in Rasuwa")))
+  kbl(caption = "Economic impacts and losses in Rasuwa") |> 
+  kable_classic(full_width = F) |> 
+  kable_styling(bootstrap_options = "striped")
 ```
 
 <br><br><br>
@@ -319,6 +323,7 @@ consolidated |>
   summarise(
     individuals_reached = sum(individuals_reached, na.rm = TRUE), 
     .groups = "drop") |> 
+  mutate(individuals_reached = round(individuals_reached)) |> 
   pivot_wider(
     names_from = has_ward, 
     values_from = individuals_reached
@@ -329,10 +334,10 @@ consolidated |>
   mutate(pc_with_ward = ifelse(no_ward == 0 & ward_reported == 0, 
                                0, 
                                round(ward_reported / (ward_reported + no_ward) * 100, 2))) |> 
+  kbl(caption = "Ward-level reporting of beneficiary frequencies") |> 
+  kable_classic(full_width = F) |> 
+  kable_styling(bootstrap_options = "striped")
 
-  flextable() |> 
-  theme_zebra() |> 
-  flextable::set_caption(as_paragraph(as_chunk("Ward-level reporting of beneficiary frequencies")))
 ```
 
 <br><br><br>
@@ -380,39 +385,15 @@ consolidated |>
             agencies = paste0(agencies, collapse = ", "), 
             .groups = "drop") |> 
   select(-adm2_pcode, -adm3_pcode) |> 
-  flextable() |> 
-  theme_zebra() |> 
-  flextable::set_caption(as_paragraph(as_chunk("Agencies by municipality")))|> 
-  flextable::autofit()
+  kbl(caption = "Agencies by municipality") |> 
+  kable_classic(full_width = T) |> 
+  kable_styling(bootstrap_options = "striped")
+
 ```
 
 <br><br><br>
 
 # References and useful datasets
-
-## Interactive Reference Table
-
-```{r}
-census_flat |> 
-  filter(district == "Rasuwa") |>
-  select(municipality, ward,
-         total_households, population_total, sex_ratio, 
-         population_density, total_children_5_17, 
-         population_male, population_female, 
-         total_dependency_ratio, 
-         adm3_pcode) |> 
-  mutate_at(vars(sex_ratio, population_density), ~ round(.x, 2)) |> 
-    datatable(filter = list(position = "top", clear = FALSE), 
-              options = list(pageLength = 10, scrollX = TRUE),
-              caption = htmltools::tags$caption(style = "caption-side: top;
-                                              text-align: center; font-size: 140%;",
-                                              "Selected Demographic Census Variables"))
- 
-```
-
-<br><br><br>
-
-## Useful links and datasets
 
 ### [Consolidated Census ward-level household and population](https://drive.google.com/drive/folders/1gNkJJR6Q4psoCrWyBcUyzqL9wcKVVRbb?usp=drive_link)
 Variables include a breakdown of housing materials, wealth quintile, school attendance and household WASH. 
@@ -426,3 +407,5 @@ Includes ward-level shapefiles and settlement points.
 ### [Digitised NDRRMA Municipal Damage Tables](https://drive.google.com/drive/folders/1GehdusDNji6HGQGQ6R7cEHNJC3BwwNau?usp=drive_link)
 
 ### [5W Dashboard](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
+
+### [Online version of this report](https://nepal-rasuwa-trishuli-floods-undac.github.io/nepal_floods_reports/rasuwa_district_profile.html)

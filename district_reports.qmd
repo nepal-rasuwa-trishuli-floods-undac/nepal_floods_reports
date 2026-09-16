@@ -307,9 +307,7 @@ rasuwa_population_map <- census_working |>
     by = c("adm2_pcode", "adm3_pcode", "ward")) |>
   filter(!is.na(geometry)) |> 
   filter(district == "Rasuwa") |>
-  mutate(ward_label = ifelse(!is.na(projection_2026_population_total),
-                                    paste0(ward, "\n", projection_2026_population_total), 
-                             "")) |> 
+  mutate(ward_label = paste0(ward, "\n", format(population_total, big.mark = ","))) |> 
   st_as_sf() |> 
   ggplot() +
   geom_sf(data = adm3, alpha = .25, linewidth = .5, colour = "grey70", fill = NA) +
@@ -318,7 +316,7 @@ rasuwa_population_map <- census_working |>
             alpha = .5
           ) +
   # Ward populations and affected wards
-  geom_sf(aes(colour = rdna, fill = projection_2026_population_total), linewidth = .5, alpha = .8) +
+  geom_sf(aes(colour = rdna, fill = population_total), linewidth = .5, alpha = .8) +
   # River
   geom_sf(data = river, colour = "#002e6e", fill = "#002e6e", alpha = .6) +
   # Settlements
@@ -336,7 +334,7 @@ rasuwa_population_map <- census_working |>
                                 "Village" = 16, 
                                 "Suburb" = 15)) +
   geom_shadowtext(
-      aes(label = ward_label, 
+      aes(label = ward, 
           geometry = geometry), 
       stat = "sf_coordinates", 
       size = 2.5, color = "black",  bg.color = "white", bg.r = 0.1) +
@@ -364,6 +362,7 @@ rasuwa_poorest_quintile <- census_working |>
     by = c("adm2_pcode", "adm3_pcode", "ward")) |>
   filter(!is.na(geometry)) |> 
   filter(district == "Rasuwa") |>
+  mutate(ward_label = paste0(ward, "|", wealth_quintile_poorest_quintile_pc, "%")) |> 
   st_as_sf() |> 
   ggplot() +
   geom_sf(data = adm3, alpha = .25, linewidth = .5, colour = "grey70", fill = NA) +
@@ -390,16 +389,17 @@ rasuwa_poorest_quintile <- census_working |>
                                 "Village" = 16, 
                                 "Suburb" = 15)) +
   geom_shadowtext(
-      aes(label = ward, 
+      aes(label = ward_label, 
           geometry = geometry), 
       stat = "sf_coordinates", 
-      size = 2, color = "black",  bg.color = "white", bg.r = 0.1) +
+      size = 1.5, color = "black",  bg.color = "white", bg.r = 0.1) +
   coord_sf(xlim = c(85.1, 85.8), ylim = c(27.95, 28.4), expand = TRUE) +
   labs(x = "", y = "", 
-       title = "Wards in Rasuwa by % of Population in the Poorest Quintile Nationally",
+       title = "% of Ward Population in the Poorest Quintile Nationally",
        subtitle = "15 wards affected in Rasuwa. District Headqaurters labelled in red.",
        shape = "Settlement\nType",
        fill = "% in\nPoorest\nQuintile", 
+       caption = "Source: Nepal National Statistics Office, NDRRMA RDNA", 
        colour = "RDNA") + 
   guides(size = guide_legend(override.aes = list(alpha = 1)), 
          shape = guide_legend(override.aes = list(alpha = 1)))
@@ -455,7 +455,8 @@ buildings_impacted_rasuwa <- municipal_damage_losses |>
        title = "Impacted buildings in Rasuwa, by Municipality",
        subtitle = "15 wards affected in Rasuwa. District Headqaurters labelled in red.",
        shape = "Settlement\nType",
-       fill = "Impacted\nBuildings", 
+       fill = "Impacted\nBuildings",
+       caption = "Source: NDRRMA RDNA", 
        colour = "RDNA")
 
 ggsave("./plots/buildings_impacted_rasuwa.png", buildings_impacted_rasuwa,
@@ -463,10 +464,6 @@ ggsave("./plots/buildings_impacted_rasuwa.png", buildings_impacted_rasuwa,
 ```
 
 ## Ward cadastral
-
-```{r}
-ward_cadastral |> glimpse()
-```
 
 
 ```{r}
@@ -513,12 +510,26 @@ rasuwa_cadastral_affected <- ward_cadastral |>
        subtitle = "15 wards affected in Rasuwa. District Headqaurters labelled in red.",
        shape = "Settlement\nType",
        fill = "Hectares\nAffected", 
+       caption = "Source: Nepal National Statistics Office, NDRRMA RDNA", 
        colour = "RDNA") + 
   guides(size = guide_legend(override.aes = list(alpha = 1)), 
          shape = guide_legend(override.aes = list(alpha = 1)))
 
 ggsave("./plots/rasuwa_cadastral_affected.png", rasuwa_cadastral_affected,
        height = 8.27, width = 11.69, units = "in")
+```
+
+# Reached
+
+```{r}
+consolidated |> 
+  filter(response_modality != "Awareness/Advocacy") |> 
+  filter(district == "Rasuwa") |>
+  group_by(adm3_pcode) |> 
+  summarise(
+    individuals_reached = max(individuals_reached, na.rm = TRUE), 
+    .groups = "drop") |> 
+  mutate(individuals_reached = ifelse(!is.finite(individuals_reached), 0, individuals_reached))
 ```
 
 
@@ -530,8 +541,9 @@ rasuwa_reached_map <- consolidated |>
   filter(district == "Rasuwa") |>
   group_by(adm3_pcode) |> 
   summarise(
-    individuals_reached = sum(individuals_reached, na.rm = TRUE), 
-    .groups = "drop") |> 
+    individuals_reached = max(individuals_reached, na.rm = TRUE), 
+    .groups = "drop") |>
+  mutate(individuals_reached = ifelse(!is.finite(individuals_reached), 0, individuals_reached)) |> 
   right_join(adm3 |> filter(adm2_name == "Rasuwa"), 
             by = "adm3_pcode") |>
   mutate(municipal_label = paste0(adm3_name, "\n", format(round(individuals_reached), big.mark = ","))) |> 
@@ -560,10 +572,11 @@ rasuwa_reached_map <- consolidated |>
       size = 2, color = "black",  bg.color = "white", bg.r = 0.1) +
   coord_sf(xlim = c(85.1, 85.8), ylim = c(27.95, 28.4), expand = TRUE) +
   labs(x = "", y = "", 
-       title = "Individuals in Rasuwa, by Municipality",
+       title = "Individuals reached in Rasuwa, by Municipality",
        subtitle = "District Headqaurters labelled in red. Beneficiary frequencies are not individuals and include double counting",
        shape = "Settlement\nType",
        fill = "Frequencies\nReached", 
+       caption = "Source: 5Ws", 
        colour = "RDNA")
 
 ggsave("./plots/rasuwa_reached_map.png", rasuwa_reached_map,
@@ -767,11 +780,12 @@ consolidated |>
       by = c("adm2_pcode", "adm3_pcode")
   ) |>
   mutate(num_agencies = as.numeric(num_agencies)) |>
+  mutate(label = paste0(adm3_name, "\n", num_agencies)) |> 
   st_as_sf() |> 
   ggplot() +
   geom_sf(aes(fill = num_agencies), linewidth =.1) +
-  geom_sf_text(aes(label = adm3_name), size = 1.5, colour = "grey40", alpha = .8,
-            nudge_x = -0.03, nudge_y = -0.02) +
+  geom_sf_text(aes(label = adm3_name), size = 2, colour = "grey40", alpha = .8,
+               nudge_x = -0.02, nudge_y = -0.02) +
   geom_sf_text(aes(label = num_agencies), size = 2) +
   scale_fill_continuous(high = "#004987", low = "#e3edf6", labels = comma, na.value = "grey97") +
   # scale_fill_continuous(palette = "Blues", 
@@ -782,6 +796,7 @@ consolidated |>
   labs(title = "Number of agencies by sector, by municipality", 
        subtitle = paste0("As of ", consolidated_date, ", from the 5Ws"), 
        x = "", y = "", 
+       caption = "Source: 5Ws", 
        fill = "Number of\nagencies") + 
   theme(strip.background = element_rect(fill = "black"), 
         axis.text.x = element_text(size = 5), 
@@ -793,7 +808,7 @@ ggsave("./plots/rasuwa_sector_agencies_facet_map.png", height = 8.27, width = 11
 ```
 
 
-
+## Frequencies
 
 
 ```{r}
@@ -812,11 +827,13 @@ consolidated |>
       adm3 |> filter(adm2_name %in% c("Rasuwa")), 
       by = c("adm2_pcode", "adm3_pcode")
   ) |>
+  mutate(label = paste0(adm3_name, "\n", format(round(frequencies), big.mark = ","))) |> 
   st_as_sf() |> 
   ggplot() +
   geom_sf(aes(fill = frequencies), linewidth =.1) +
-  geom_sf_text(aes(label = adm3_name), size = 1.5, colour = "grey40", alpha = .8,
-            nudge_x = -0.03, nudge_y = -0.02) +
+  geom_sf_text(aes(label = adm3_name), size = 2, colour = "grey40", alpha = .8,
+               nudge_x = -0.02, nudge_y = -0.02) +
+  geom_sf_text(aes(label = comma(round(frequencies))), size = 2) +
   # geom_sf_text(aes(label = comma(frequencies)), size = 2) +
   scale_fill_continuous(high = "#004987", low = "#e3edf6", labels = comma, na.value = "grey97", 
                         trans = "log10") +
@@ -824,12 +841,14 @@ consolidated |>
   labs(title = "Number of Beneficiary frequencies reached, by municipality", 
        subtitle = paste0("As of ", consolidated_date, ", from the 5Ws; includes double counting"), 
        x = "", y = "", 
-       fill = "Number of\nfrequencies\n(log)") + 
+       fill = "Number of\nfrequencies\n(log scale)") + 
   theme(strip.background = element_rect(fill = "black"), 
         axis.text.x = element_text(size = 5), 
         axis.text.y = element_text(size = 5), 
         panel.grid.major = element_line(color = "gray90"),
         panel.grid.minor = element_line(color = "gray90"))
+
+ggsave("./plots/rasuwa_frequencies_facet_map.png", height = 8.27, width = 11.69, units = "in")
 ```
 
 
