@@ -1,0 +1,992 @@
+---
+title: "Untitled"
+format: pdf
+---
+
+```{r setup}
+
+knitr::opts_chunk$set(echo = FALSE, fig.width=9, message = FALSE, warning=FALSE)
+
+library(tidyverse)
+library(sf)
+library(readxl)
+library(kableExtra)
+library(flextable)
+library(viridis)
+library(scales)
+library(janitor)
+library(cowplot)
+library(magick)
+library(patchwork)
+library(shadowtext)
+library(showtext)
+library(ggrepel)
+library(terra)
+library(tidyterra)
+library(maptiles)
+library(cowplot)
+library(ggview)
+library(flextable)
+
+# showtext_auto()
+
+# font_add_google("Roboto", "roboto")
+
+`%out%` <- Negate(`%in%`)
+
+theme_set(theme_light())
+
+options(scipen = 999)
+
+```
+
+```{r geodata}
+
+nepal_admin <- read_xlsx("./data/npl_admin_boundaries.xlsx", 
+                         sheet = 7) |> 
+  select(adm3_name, adm3_pcode, adm2_name, adm2_pcode, adm1_name, adm1_pcode)
+
+affected_municipalities_wards <- read_xls("./data/Affected_wardsv2.xls") |> 
+  janitor::clean_names() |> 
+  select(adm1_pcode, 
+         district = adm2_en, 
+         adm2_pcode,
+         municipality = adm3_en, 
+         adm3_pcode, 
+         ward = new_ward_n) |> 
+  left_join(
+    nepal_admin |> 
+      distinct(adm1_name, adm1_pcode), 
+    by = "adm1_pcode"
+  ) |> 
+  rename(province = adm1_name) |> 
+  relocate(province, .before = adm1_pcode) |> 
+  distinct(adm3_pcode, ward)
+
+wards <- st_read("./data/shapefiles/npl_admn_ad4_py_s1_ocha_hp_wards.shp") |> 
+  rename(ward = NEW_WARD_N) |> 
+  janitor::clean_names() |> 
+  mutate(district = str_to_title(district))
+
+affected_wards <- read_xls("./data/Affected_wardsV2.xls") |> 
+  janitor::clean_names()
+
+adm3 <- st_read("./data/shapefiles/npl_admin_boundaries.shp/npl_admin3.shp")
+
+adm2 <- st_read("./data/shapefiles/npl_admin_boundaries.shp/npl_admin2.shp")
+
+river_buffer <- st_read("./data/shapefiles/aoi_affd_aff_py_s3_govn_pp_AOI500mBuffer.shp") 
+
+river <- st_read("./data/shapefiles/Flood Extent Shape file/Flood extent_SHP.shp")
+
+holding_centres <- st_read("./data/shapefiles/npl_shel_shl_pt_s3_various_pp_holding_centre.shp")
+
+settlements <- st_read("./data/shapefiles/npl_stle_stl_pt_s0_osm_pp_settlements.shp") |> 
+  clean_names() |> 
+  mutate(point_size = case_when(
+    fclass == "hamlet" ~ .5, 
+    fclass == "village" ~ .7, 
+    fclass == "suburb" ~ .9,
+    fclass == "town" ~ 1.25, 
+    fclass == "city" ~ 1.5, 
+    fclass == "national_capital" ~ 2, 
+    TRUE ~ 10
+  ))
+
+# river <- st_read("./data/shapefiles/Flood Extent.gpkg", options = "CONVERT_TO_LINEAR=YES") 
+
+```
+
+```{r data}
+
+municipal_damage_losses <- read_csv("./data/municipal_damage_loss.csv")
+
+municipal_long <- municipal_damage_losses |> 
+  mutate(affected_hectares_agriculture = paddy_affected_hectares + vegetables_affected_hectares, 
+         total_baseline_hectares = paddy_baseline_hectares + vegetables_baseline_hectares, 
+         pc_affected_hectares = affected_hectares_agriculture / total_baseline_hectares, 
+         pc_affected_buildings = affected_buildings / estimated_buildings_in_damaged_corridor, 
+         pc_impacted_households = impacted_households / households_in_affected_wards_census_2021) |> 
+  select(adm2_pcode, adm3_pcode, impacted_households, 
+         pc_impacted_households, 
+         impacted_population = impacted_population_total,
+         affected_buildings, pc_affected_buildings,
+         affected_hectares_agriculture, pc_affected_hectares) |> 
+  pivot_longer(cols = impacted_households:pc_affected_hectares, 
+               names_to = "variable", 
+               values_to = "value") 
+
+consolidated_date <- "20260914"
+
+consolidated <- read_xlsx("./data/NEPAL 5W Data Consolidation (ADMIN_ONLY) 20260914.xlsx",
+                          skip = 5,
+                          sheet = "Compiled_Data") |> 
+  janitor::clean_names() |> 
+  mutate_at(c("province", "district", "municipality"), ~ str_to_title(.)) |> 
+  mutate_at(c("province", "district", "municipality"), ~ str_trim(.)) |> 
+  mutate(municipality = str_remove_all(municipality, " Gaunpalika")) |> 
+  mutate(province = case_when(
+    district == "Gorkha" ~ "Gandaki", 
+    district == "Tanahu" ~ "Gandaki",
+    TRUE ~ province
+  )) |> 
+  mutate(district = case_when(
+    municipality == "Gosaikunda" ~ "Rasuwa", 
+    municipality == "Bidur Municipality" ~ "Nuwakot", 
+    TRUE ~ district
+  )) |> 
+  mutate(municipality = case_when(
+    municipality == "Benighat" ~ "Benighat Rorang", 
+    municipality == "Galchi Rural Municipality" ~ "Galchhi", 
+    municipality == "Gandaki" ~ "Gandaki", 
+    municipality == "Bheri Malika Municipality" ~ "Bheri Malika", 
+    municipality == "Nalgad Municipality" ~ "Nalgad", 
+    municipality == "Kathmandu Metropolitian City" ~ "Kathmandu", 
+    municipality == "Nagarjun Municipality" ~ "Nagarjun", 
+    municipality == "Belkotgadhi Municipality|Belkotgadhi Nagarpalika" ~ "Belkotgadhi", 
+    str_detect(municipality, "Bidur") ~ "Bidur", 
+    municipality == "Kispang Municipality" ~ "Kispang", 
+    municipality == "Tarkeshwor" ~ "Tarakeshwor", 
+    municipality == "Rasuwa Dao, Dhunche" ~ "Gosaikunda",
+    str_detect(municipality, "Devghat") ~ "Devghat", 
+    str_detect(municipality, "Gandaki") ~ "Gandaki", 
+    str_detect(municipality, "Belkotgadhi") ~ "Belkotgadhi", 
+    municipality == "Aanbukhaireni" ~ "Aanbu Khaireni",
+    TRUE ~ municipality)) |> 
+  left_join(
+    nepal_admin |> 
+      distinct(adm1_name, adm1_pcode), 
+    by = c("province" = "adm1_name")
+  ) |> 
+  left_join(
+    nepal_admin |> 
+      distinct(adm1_pcode, adm2_name, adm2_pcode), 
+    by = c("adm1_pcode", "district" = "adm2_name")
+  ) |> 
+  left_join(
+    nepal_admin |> 
+      distinct(adm1_pcode, adm2_pcode, 
+             adm3_name, adm3_pcode), 
+    by = c("adm1_pcode", "adm2_pcode", "municipality" = "adm3_name")
+  ) |> 
+  rename(individuals_reached = total_number_of_beneficiaries_reached_people_individuals) |> 
+  filter(disaster_response_plan == "Rasuwa Flood Response") 
+
+census_flat <- cbind(
+  read_csv("./data/nepal_census2021_ward_level_household_tables_bagmati_gandaki_flat.csv") |> 
+    mutate(match1 = paste0(adm2_pcode, adm3_pcode, ward)),
+  read_csv("./data/nepal_census2021_ward_level_individual_tables_bagmati_gandaki_flat.csv") |> 
+    mutate(match2 = paste0(adm2_pcode, adm3_pcode, ward)) |> 
+    select(-c(province:ward), -total_households)
+)
+
+
+# Using this temporarily until the population figures are resolved
+differences <- read_csv("./data/differences_between_flash_appeal_and_rdna_affected_wards.csv") |> 
+  mutate(match3 = paste0(adm2_pcode, adm3_pcode, ward))
+
+damage_points <- read_xlsx("./data/Consolidated Damage.xlsx") |> 
+  clean_names() |> 
+  rename(x = long, y = lat)
+
+impacted_buildings <- read_xlsx("./data/impacted_buildings.xlsx") |> 
+  mutate(municipality = ifelse(municipality == "Ichcha Kamana", 
+                               "Ichchha Kamana", 
+                               municipality)) |> 
+  left_join(
+    nepal_admin |> 
+      distinct(adm3_name, adm1_pcode, adm2_pcode, adm3_pcode), 
+    by = c("municipality" = "adm3_name")
+  ) |> 
+  filter(adm3_pcode != "NP0327301" & adm3_pcode != "NP0335301")
+
+census_working <- census_flat |> 
+  mutate(improved_drinking_water = drinking_water_tap_piped_within_premises +
+           drinking_water_tap_piped_outside_premises +
+           drinking_water_tubewell_handpump +
+           drinking_water_covered_well_kuwa, 
+         no_toilet_public_toilet = toilet_no_toilet + toilet_public
+           ) |>
+  select(province, district, municipality, adm1_pcode:ward,
+         total_households, population_total, 
+         population_with_disabilities, 
+         population_pc_urban, 
+         house_quality_least_adequate_pc, house_quality_inadequate_pc, 
+         improved_drinking_water, no_toilet_public_toilet, 
+         wealth_quintile_poorest_quintile_count,
+         wealth_quintile_poorest_quintile_pc, 
+         wealth_quintile_poorer_quintile_pc)
+
+wards_joined <- wards |> 
+  select(-district) |> 
+  left_join(
+    differences |> 
+      mutate(rdna = ifelse(rdna_affected == 1, "Affected", NA_character_)) |> 
+      select(adm2_pcode, adm3_pcode, ward, rdna, rdna_affected, projection_2026_population_total), 
+    by = c("adm2_pcode", "adm3_pcode", "ward")
+  ) 
+
+ward_cadastral <- read_csv("./data/ward_cadastral_damage.csv")
+
+```
+
+
+
+
+
+
+
+## Impacted buildings
+
+
+```{r}
+rasuwa_impacted_buildings <- impacted_buildings |>
+  left_join(wards_joined, 
+    by = c("adm2_pcode", "adm3_pcode", "ward")) |>
+  filter(adm2_en == "Rasuwa") |>
+  mutate(ward_label = ifelse(!is.na(impacted_buildings), 
+                                    paste0(ward, "\n", impacted_buildings))) |> 
+  st_as_sf() |> 
+  ggplot() +
+  geom_sf(data = adm3, alpha = .25, linewidth = .5, colour = "grey70", fill = NA) +
+  geom_sf_text(data = adm3 |> filter(adm2_name == "Rasuwa"), 
+            aes(label = adm3_name),
+            alpha = .5
+          ) +
+  # Ward populations and affected wards
+  geom_sf(aes(colour = rdna, fill = impacted_buildings), linewidth = .5, alpha = .8) +
+  # River
+  geom_sf(data = river, colour = "#002e6e", fill = "#002e6e", alpha = .6) +
+  # Settlements
+  geom_sf(data = settlements |> filter(adm2_en == "Rasuwa") |> 
+            mutate(fclass = str_to_title(fclass),
+                   fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb"))), 
+          aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
+  geom_text(aes(x = 85.29562119920958, y = 28.111595947460756, label = "Dhunche"), 
+            size = 2.5, colour = "#ed1847", alpha = .5) +
+  scale_colour_manual(values = c("Affected" = "#e56a54"), 
+    na.value = "grey97", 
+    na.translate = FALSE) +
+  scale_fill_continuous(high = "#003425", low = "#e6efd0", labels = comma) +
+  scale_shape_manual(values = c("Hamlet" = 20, 
+                                "Village" = 16, 
+                                "Suburb" = 15)) +
+  geom_shadowtext(
+      aes(label = ward_label, 
+          geometry = geometry), 
+      stat = "sf_coordinates", 
+      size = 2.5, color = "black",  bg.color = "white", bg.r = 0.1) +
+  coord_sf(xlim = c(85.1, 85.8), ylim = c(27.95, 28.4), expand = TRUE) +
+  labs(x = "", y = "", 
+       title = "Impacted buildings in Rasuwa",
+       subtitle = "1,779 buildings impacted in Rasuwa. District Headqaurters labelled in red.",
+       shape = "Settlement\nType",
+       fill = "Impacted\nBuildings", 
+       colour = "RDNA") + 
+  guides(size = guide_legend(override.aes = list(alpha = 1)), 
+         shape = guide_legend(override.aes = list(alpha = 1)))
+
+ggsave("./plots/rasuwa_impacted_buildings.png", rasuwa_impacted_buildings,
+       height = 8.27, width = 11.69, units = "in")
+
+```
+
+## Population 
+
+```{r}
+impacted_buildings |> 
+  filter(adm2_pcode == "NP0329") %>%
+  {sum(.$impacted_buildings)}
+  glimpse()
+```
+
+
+```{r}
+rasuwa_population_map <- census_working |>
+  left_join(wards_joined, 
+    by = c("adm2_pcode", "adm3_pcode", "ward")) |>
+  filter(!is.na(geometry)) |> 
+  filter(district == "Rasuwa") |>
+  mutate(ward_label = ifelse(!is.na(projection_2026_population_total),
+                                    paste0(ward, "\n", projection_2026_population_total), 
+                             "")) |> 
+  st_as_sf() |> 
+  ggplot() +
+  geom_sf(data = adm3, alpha = .25, linewidth = .5, colour = "grey70", fill = NA) +
+  geom_sf_text(data = adm3 |> filter(adm2_name == "Rasuwa"), 
+            aes(label = adm3_name),
+            alpha = .5
+          ) +
+  # Ward populations and affected wards
+  geom_sf(aes(colour = rdna, fill = projection_2026_population_total), linewidth = .5, alpha = .8) +
+  # River
+  geom_sf(data = river, colour = "#002e6e", fill = "#002e6e", alpha = .6) +
+  # Settlements
+  geom_sf(data = settlements |> filter(adm2_en == "Rasuwa") |> 
+            mutate(fclass = str_to_title(fclass),
+                   fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb"))), 
+          aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
+  geom_text(aes(x = 85.29562119920958, y = 28.111595947460756, label = "Dhunche"), 
+            size = 2.5, colour = "#ed1847", alpha = .5) +
+  scale_colour_manual(values = c("Affected" = "#e56a54"), 
+    na.value = "grey97", 
+    na.translate = FALSE) +
+  scale_fill_continuous(high = "#003425", low = "#e6efd0", labels = comma) +
+  scale_shape_manual(values = c("Hamlet" = 20, 
+                                "Village" = 16, 
+                                "Suburb" = 15)) +
+  geom_shadowtext(
+      aes(label = ward_label, 
+          geometry = geometry), 
+      stat = "sf_coordinates", 
+      size = 2.5, color = "black",  bg.color = "white", bg.r = 0.1) +
+  coord_sf(xlim = c(85.1, 85.8), ylim = c(27.95, 28.4), expand = TRUE) +
+  labs(x = "", y = "", 
+       title = "Ward Populations in Rasuwa",
+       subtitle = "15 wards affected in Rasuwa. District Headqaurters labelled in red.",
+       shape = "Settlement\nType",
+       fill = "Ward\nPopulation", 
+       colour = "RDNA") + 
+  guides(size = guide_legend(override.aes = list(alpha = 1)), 
+         shape = guide_legend(override.aes = list(alpha = 1)))
+
+ggsave("./plots/rasuwa_population_map.png", height = 8.27, width = 11.69, units = "in")
+
+```
+
+## Poorest quintile 
+
+
+
+```{r}
+rasuwa_poorest_quintile <- census_working |>
+  left_join(wards_joined, 
+    by = c("adm2_pcode", "adm3_pcode", "ward")) |>
+  filter(!is.na(geometry)) |> 
+  filter(district == "Rasuwa") |>
+  st_as_sf() |> 
+  ggplot() +
+  geom_sf(data = adm3, alpha = .25, linewidth = .5, colour = "grey70", fill = NA) +
+  geom_sf_text(data = adm3 |> filter(adm2_name == "Rasuwa"), 
+            aes(label = adm3_name),
+            alpha = .5
+          ) +
+  # Ward populations and affected wards
+  geom_sf(aes(colour = rdna, fill = wealth_quintile_poorest_quintile_pc), linewidth = .5, alpha = .8) +
+  # River
+  geom_sf(data = river, colour = "#002e6e", fill = "#002e6e", alpha = .6) +
+  # Settlements
+  geom_sf(data = settlements |> filter(adm2_en == "Rasuwa") |> 
+            mutate(fclass = str_to_title(fclass),
+                   fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb"))), 
+          aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
+  geom_text(aes(x = 85.29562119920958, y = 28.111595947460756, label = "Dhunche"), 
+            size = 2.5, colour = "#ed1847", alpha = .5) +
+  scale_colour_manual(values = c("Affected" = "#e56a54"), 
+    na.value = "grey97", 
+    na.translate = FALSE) +
+  scale_fill_continuous(high = "#003425", low = "#e6efd0", labels = comma) +
+  scale_shape_manual(values = c("Hamlet" = 20, 
+                                "Village" = 16, 
+                                "Suburb" = 15)) +
+  geom_shadowtext(
+      aes(label = ward, 
+          geometry = geometry), 
+      stat = "sf_coordinates", 
+      size = 2, color = "black",  bg.color = "white", bg.r = 0.1) +
+  coord_sf(xlim = c(85.1, 85.8), ylim = c(27.95, 28.4), expand = TRUE) +
+  labs(x = "", y = "", 
+       title = "Wards in Rasuwa by % of Population in the Poorest Quintile Nationally",
+       subtitle = "15 wards affected in Rasuwa. District Headqaurters labelled in red.",
+       shape = "Settlement\nType",
+       fill = "% in\nPoorest\nQuintile", 
+       colour = "RDNA") + 
+  guides(size = guide_legend(override.aes = list(alpha = 1)), 
+         shape = guide_legend(override.aes = list(alpha = 1)))
+
+ggsave("./plots/rasuwa_poorest_quintile_map.png", rasuwa_poorest_quintile,
+       height = 8.27, width = 11.69, units = "in")
+```
+
+
+```{r logos}
+
+combined_logos <- grid::rasterGrob(image_append(
+  c(image_read("./plots/logos/UN Nepal-Logo_horizontal_match_size.png"),
+    image_read("./plots/logos/002_COMM_GUID_iMMAPLogo2.png"))))
+
+image_write((image_append(
+  c(image_read("./plots/logos/UN Nepal-Logo_horizontal_match_size.png"),
+    image_read("./plots/logos/002_COMM_GUID_iMMAPLogo2.png")),
+  stack = TRUE) 
+  ), 
+  path = "./brand/combined_logos_stacked.png", format = "png")
+```
+
+```{r}
+buildings_impacted_rasuwa <- municipal_damage_losses |> 
+  filter(district == "Rasuwa") |> 
+  right_join(adm3 |> filter(adm2_name == "Rasuwa"), 
+            by = "adm3_pcode") |> 
+  st_as_sf() |>  
+  ggplot() + 
+  geom_sf(data = adm3, alpha = .25, linewidth = .5, colour = "grey70", fill = NA) +
+  geom_sf(aes(fill = impacted_buildings), alpha = .8) +
+  geom_sf(data = wards_joined |> filter(adm2_en == "Rasuwa"), aes(colour = rdna), fill = NA, linewidth = .5) +
+  geom_sf_text(data = adm3 |> filter(adm2_name == "Rasuwa"), 
+            aes(label = adm3_name),
+            alpha = .5
+          ) +
+  scale_fill_continuous(high = "#003425", low = "#e6efd0", labels = comma, na.value = "grey97") +
+  # River
+  geom_sf(data = river, colour = "#002e6e", fill = "#002e6e") +
+  # Settlements
+  geom_sf(data = settlements |> filter(adm2_en == "Rasuwa") |> 
+            mutate(fclass = str_to_title(fclass),
+                   fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb"))), 
+          aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
+  annotate("text", x = 85.29562119920958, y = 28.111595947460756, label = "Dhunche", 
+            size = 2.5, colour = "#ed1847") +
+  scale_colour_manual(values = c("Affected" = "#e56a54"), 
+    na.value = "grey97", 
+    na.translate = FALSE) +
+  coord_sf(xlim = c(85.1, 85.8), ylim = c(27.95, 28.4), expand = TRUE) +
+  labs(x = "", y = "", 
+       title = "Impacted buildings in Rasuwa, by Municipality",
+       subtitle = "15 wards affected in Rasuwa. District Headqaurters labelled in red.",
+       shape = "Settlement\nType",
+       fill = "Impacted\nBuildings", 
+       colour = "RDNA")
+
+ggsave("./plots/buildings_impacted_rasuwa.png", buildings_impacted_rasuwa,
+       height = 8.27, width = 11.69, units = "in")
+```
+
+## Ward cadastral
+
+```{r}
+ward_cadastral |> glimpse()
+```
+
+
+```{r}
+rasuwa_cadastral_affected <- ward_cadastral |>
+  right_join(wards_joined, 
+    by = c("adm2_pcode", "adm3_pcode", "ward")) |>
+  filter(district == "Rasuwa") |>
+  mutate(ward_label = ifelse(!is.na(total_affected_area_hectares), 
+                             paste0(ward, "\n", total_affected_area_hectares, " ha."), 
+                             "")) |> 
+  st_as_sf() |> 
+  ggplot() +
+  geom_sf(data = adm3, alpha = .25, linewidth = .5, colour = "grey70", fill = NA) +
+  geom_sf_text(data = adm3 |> filter(adm2_name == "Rasuwa"), 
+            aes(label = adm3_name),
+            alpha = .5
+          ) +
+  # Ward populations and affected wards
+  geom_sf(aes(colour = rdna, fill = total_affected_area_hectares), linewidth = .5, alpha = .8) +
+  # River
+  geom_sf(data = river, colour = "#002e6e", fill = "#002e6e", alpha = .6) +
+  # Settlements
+  geom_sf(data = settlements |> filter(adm2_en == "Rasuwa") |> 
+            mutate(fclass = str_to_title(fclass),
+                   fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb"))), 
+          aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
+  geom_text(aes(x = 85.29562119920958, y = 28.111595947460756, label = "Dhunche"), 
+            size = 2.5, colour = "#ed1847", alpha = .5) +
+  scale_colour_manual(values = c("Affected" = "#e56a54"), 
+    na.value = "grey97", 
+    na.translate = FALSE) +
+  scale_fill_continuous(high = "#003425", low = "#e6efd0", labels = comma) +
+  scale_shape_manual(values = c("Hamlet" = 20, 
+                                "Village" = 16, 
+                                "Suburb" = 15)) +
+  geom_shadowtext(
+      aes(label = ward_label, 
+          geometry = geometry), 
+      stat = "sf_coordinates", 
+      size = 2, color = "black",  bg.color = "white", bg.r = 0.1) +
+  coord_sf(xlim = c(85.1, 85.8), ylim = c(27.95, 28.4), expand = TRUE) +
+  labs(x = "", y = "", 
+       title = "Cadastral Land in Rasuwa damaged by the Floods, by Ward",
+       subtitle = "15 wards affected in Rasuwa. District Headqaurters labelled in red.",
+       shape = "Settlement\nType",
+       fill = "Hectares\nAffected", 
+       colour = "RDNA") + 
+  guides(size = guide_legend(override.aes = list(alpha = 1)), 
+         shape = guide_legend(override.aes = list(alpha = 1)))
+
+ggsave("./plots/rasuwa_cadastral_affected.png", rasuwa_cadastral_affected,
+       height = 8.27, width = 11.69, units = "in")
+```
+
+
+
+```{r}
+
+rasuwa_reached_map <- consolidated |> 
+  filter(response_modality != "Awareness/Advocacy") |> 
+  filter(district == "Rasuwa") |>
+  group_by(adm3_pcode) |> 
+  summarise(
+    individuals_reached = sum(individuals_reached, na.rm = TRUE), 
+    .groups = "drop") |> 
+  right_join(adm3 |> filter(adm2_name == "Rasuwa"), 
+            by = "adm3_pcode") |>
+  mutate(municipal_label = paste0(adm3_name, "\n", format(round(individuals_reached), big.mark = ","))) |> 
+  st_as_sf() |>  
+  ggplot() + 
+  geom_sf(data = adm3, alpha = .25, linewidth = .5, colour = "grey70", fill = NA) +
+  geom_sf(aes(fill = individuals_reached), alpha = .8) +
+  geom_sf(data = wards_joined |> filter(adm2_en == "Rasuwa"), aes(colour = rdna), fill = NA, linewidth = .5) +
+  scale_fill_continuous(high = "#004987", low = "#e3edf6", labels = comma, na.value = "grey97") +
+  # River
+  geom_sf(data = river, colour = "#002e6e", fill = "#002e6e") +
+  # Settlements
+  geom_sf(data = settlements |> filter(adm2_en == "Rasuwa") |> 
+            mutate(fclass = str_to_title(fclass),
+                   fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb"))), 
+          aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
+  geom_text(aes(x = 85.29562119920958, y = 28.111595947460756, label = "Dhunche"), 
+            size = 2.5, colour = "#ed1847", alpha = .5) +
+  scale_colour_manual(values = c("Affected" = "#e56a54"), 
+    na.value = "grey97", 
+    na.translate = FALSE) +
+   geom_shadowtext(
+      aes(label = municipal_label, 
+          geometry = geometry), 
+      stat = "sf_coordinates", 
+      size = 2, color = "black",  bg.color = "white", bg.r = 0.1) +
+  coord_sf(xlim = c(85.1, 85.8), ylim = c(27.95, 28.4), expand = TRUE) +
+  labs(x = "", y = "", 
+       title = "Individuals in Rasuwa, by Municipality",
+       subtitle = "District Headqaurters labelled in red. Beneficiary frequencies are not individuals and include double counting",
+       shape = "Settlement\nType",
+       fill = "Frequencies\nReached", 
+       colour = "RDNA")
+
+ggsave("./plots/rasuwa_reached_map.png", rasuwa_reached_map,
+       height = 8.27, width = 11.69, units = "in")
+```
+
+## Agency presence
+
+
+```{r}
+consolidated |> 
+  filter(district == "Rasuwa") |> 
+  mutate(sector = ifelse(str_detect(sector, "Protection"), "Protection", sector), 
+         sector = ifelse(str_detect(sector, "Health"), "Health", sector)) |> 
+  filter(sector %out% c("ETC")) |> 
+  filter(province != "Karnali") |> 
+  mutate(adm2_pcode = ifelse(str_detect(district, "Nuwakot") & is.na(adm2_pcode), "NP0328", adm2_pcode)) |> 
+  mutate(duplicate = ifelse(
+    implementing_partner == lead_agency, 
+    1, 0
+  )) |> 
+  mutate(implementing_partner = ifelse(
+    duplicate == 1, NA_character_, implementing_partner
+  )) |> 
+  pivot_longer(
+    lead_agency:implementing_partner, 
+    names_to = "role",
+    values_to = "agencies"
+  ) |> 
+  filter(!is.na(agencies)) |>  
+  filter(!is.na(sector)) |> 
+  mutate(is_un = ifelse(
+    str_detect(agencies, "UNICEF|IOM|WFP|UNFPA|FAO|UN Women|WHO|UNDP|UNOPS"), 
+    1, 0
+  )) |> 
+  filter(is_un == 1) |>
+  select(-is_un) |> 
+  distinct(adm2_pcode, district, adm3_pcode, municipality, agencies) |> 
+  filter(!is.na(municipality) | !is.na(adm3_pcode)) |> 
+  group_by(
+    adm2_pcode, district, adm3_pcode, 
+    municipality
+  ) |> 
+  summarise(num_un_agencies = n_distinct(agencies),
+            un_agencies = paste0(agencies, collapse = ", "), 
+            .groups = "drop") |> 
+  select(-adm2_pcode, -adm3_pcode) |>
+  write_csv("./data/un_agencies_rasuwa.csv")
+  flextable() |> 
+  theme_zebra() |> 
+  flextable::set_caption(as_paragraph(as_chunk("UN agencies by municipality"))) 
+  save_as_image("./plots/rasuwa_beneficiaries_wards.png")
+```
+
+```{r}
+consolidated |> 
+  filter(district == "Rasuwa") |> 
+  mutate(sector = ifelse(str_detect(sector, "Protection"), "Protection", sector), 
+         sector = ifelse(str_detect(sector, "Health"), "Health", sector)) |> 
+  filter(sector %out% c("ETC")) |> 
+  filter(province != "Karnali") |> 
+  mutate(adm2_pcode = ifelse(str_detect(district, "Nuwakot") & is.na(adm2_pcode), "NP0328", adm2_pcode)) |> 
+  mutate(duplicate = ifelse(
+    implementing_partner == lead_agency, 
+    1, 0
+  )) |> 
+  mutate(implementing_partner = ifelse(
+    duplicate == 1, NA_character_, implementing_partner
+  )) |> 
+  pivot_longer(
+    lead_agency:implementing_partner, 
+    names_to = "role",
+    values_to = "agencies"
+  ) |> 
+  filter(!is.na(agencies)) |>  
+  filter(!is.na(sector)) |> 
+  distinct(adm2_pcode, district, adm3_pcode, municipality, agencies) |> 
+  filter(!is.na(municipality) | !is.na(adm3_pcode)) |> 
+  group_by(
+    adm2_pcode, district, adm3_pcode, 
+    municipality
+  ) |> 
+  summarise(num_agencies = n_distinct(agencies),
+            un_agencies = paste0(agencies, collapse = ", "), 
+            .groups = "drop") |> 
+  select(-adm2_pcode, -adm3_pcode) |> 
+  write_csv("./data/num_agencies_rasuwa.csv")
+  flextable() |> 
+  theme_zebra() |> 
+  flextable::set_caption(as_paragraph(as_chunk("Agencies by municipality"))) 
+```
+
+
+
+```{r}
+consolidated |> 
+  filter(district == "Rasuwa") |> 
+  mutate(has_ward = case_when(
+    ward < 14 ~ "yes", 
+    is.na(ward) ~ "no", 
+    TRUE ~ "no"
+  )) |> 
+  group_by(municipality, has_ward) |> 
+  summarise(
+    individuals_reached = sum(individuals_reached, na.rm = TRUE), 
+    .groups = "drop") |> 
+  pivot_wider(
+    names_from = has_ward, 
+    values_from = individuals_reached
+  ) |> 
+  rename(ward_reported = yes, 
+         no_ward = no) |> 
+  replace_na(list(ward_reported = 0)) |> 
+  mutate(pc_with_ward = ifelse(no_ward == 0 & ward_reported == 0, 
+                               0, 
+                               round(ward_reported / (ward_reported + no_ward) * 100, 2))) |> 
+  write_csv("./data/ward_level_beneficiary_reporting.csv")
+
+  flextable() |> 
+  theme_zebra() |> 
+  flextable::set_caption(as_paragraph(as_chunk("Ward-level reporting of beneficiary frequencies"))) |>
+  save_as_image("./plots/rasuwa_beneficiaries_wards.png")
+```
+
+## Text
+
+Of the `r census_flat |> filter(district == "Rasuwa") |> nrow()` wards in Rasuwa district, **`r differences |> filter(district == "Rasuwa") |> nrow()`** have been affected by the flooding. 
+
+```{r}
+census_working |> 
+  filter(district == "Rasuwa") |> 
+  left_join(
+    differences |> 
+      select(adm3_pcode, ward, rdna_affected), 
+    by = c("adm3_pcode", "ward")
+  ) |> 
+  filter(rdna_affected == 1) %>%
+  {sum(.$population_total)}
+
+census_working |> 
+  filter(district == "Rasuwa") %>%
+  {sum(.$total_households)}
+```
+
+```{r}
+census_working |> 
+  filter(district == "Rasuwa")  %>%
+  {sum(.$wealth_quintile_poorest_quintile_count)}
+```
+
+```{r}
+read_xlsx("./data/census/Rev_Bagmati_Hhld_WealthQuintileHousehold_Ward_formated.xlsx", skip = 2) |> 
+  setNames(c("province", "district", "municipality", "name", "ward", "wealth_quintile_total",
+             "wealth_quintile_poorest_quintile_count", 
+             "wealth_quintile_poorer_quintile_count", 
+             "wealth_quintile_middle_quintile_count", 
+             "wealth_quintile_richer_quintile_count", 
+             "wealth_quintile_richest_quintile_count", 
+             "wealth_quintile_poorest_quintile_pc", 
+             "wealth_quintile_poorer_quintile_pc",
+             "wealth_quintile_middle_quintile_pc", 
+             "wealth_quintile_richer_quintile_pc", 
+             "wealth_quintile_richest_quintile_pc")) |> 
+  filter(name == "Rasuwa")
+```
+
+# 5Ws maps 
+
+```{r number-agencies-sector-facet, warning=FALSE}
+consolidated |> 
+  mutate(sector = ifelse(str_detect(sector, "Protection"), "Protection", sector), 
+         sector = ifelse(str_detect(sector, "Health|Nutrition"), "Health and Nutrition", sector)) |> 
+  filter(sector %out% c("ETC", "Logistics") & !is.na(sector)) |> 
+  filter(province != "Karnali") |>
+  group_by(district, adm2_pcode, municipality, adm3_pcode, sector, lead_agency, implementing_partner) |>
+  filter(district == "Rasuwa") |> 
+  summarise(
+    frequencies = sum(individuals_reached, na.rm = TRUE), 
+    .groups = "drop"
+  ) |> 
+  mutate(duplicate = ifelse(
+    implementing_partner == lead_agency, 
+    1, 0
+  )) |> 
+  mutate(implementing_partner = ifelse(
+    duplicate == 1, NA_character_, implementing_partner
+  )) |> 
+  pivot_longer(
+    lead_agency:implementing_partner, 
+    names_to = "role",
+    values_to = "agencies"
+  ) |> 
+  select(-frequencies, -duplicate) |> 
+  filter(!is.na(agencies)) |>  
+  group_by(district, adm2_pcode, municipality, adm3_pcode, sector) |> 
+  summarise(num_agencies = n_distinct(agencies), 
+            agencies_text = paste(agencies, collapse = ","), 
+            .groups = "drop") |> 
+  right_join(
+      adm3 |> filter(adm2_name %in% c("Rasuwa")), 
+      by = c("adm2_pcode", "adm3_pcode")
+  ) |>
+  mutate(num_agencies = as.numeric(num_agencies)) |>
+  st_as_sf() |> 
+  ggplot() +
+  geom_sf(aes(fill = num_agencies), linewidth =.1) +
+  geom_sf_text(aes(label = adm3_name), size = 1.5, colour = "grey40", alpha = .8,
+            nudge_x = -0.03, nudge_y = -0.02) +
+  geom_sf_text(aes(label = num_agencies), size = 2) +
+  scale_fill_continuous(high = "#004987", low = "#e3edf6", labels = comma, na.value = "grey97") +
+  # scale_fill_continuous(palette = "Blues", 
+  #                       breaks = seq(1, 20, 2), 
+  #                       guide = guide_colorbar(barheight = unit(6, "cm"))) +
+  # scale_fill_viridis(direction = -1) + 
+  facet_wrap(~sector) + 
+  labs(title = "Number of agencies by sector, by municipality", 
+       subtitle = paste0("As of ", consolidated_date, ", from the 5Ws"), 
+       x = "", y = "", 
+       fill = "Number of\nagencies") + 
+  theme(strip.background = element_rect(fill = "black"), 
+        axis.text.x = element_text(size = 5), 
+        axis.text.y = element_text(size = 5), 
+        panel.grid.major = element_line(color = "gray90"),
+        panel.grid.minor = element_line(color = "gray90"))
+
+ggsave("./plots/rasuwa_sector_agencies_facet_map.png", height = 8.27, width = 11.69, units = "in")
+```
+
+
+
+
+
+```{r}
+consolidated |> 
+  mutate(sector = ifelse(str_detect(sector, "Protection"), "Protection", sector), 
+         sector = ifelse(str_detect(sector, "Health|Nutrition"), "Health and Nutrition", sector)) |> 
+  filter(sector %out% c("ETC", "Logistics") & !is.na(sector)) |> 
+  filter(province != "Karnali") |>
+  group_by(district, adm2_pcode, municipality, adm3_pcode, sector) |>
+  filter(district == "Rasuwa") |> 
+  summarise(
+    frequencies = sum(individuals_reached, na.rm = TRUE), 
+    .groups = "drop"
+  ) |>  
+  right_join(
+      adm3 |> filter(adm2_name %in% c("Rasuwa")), 
+      by = c("adm2_pcode", "adm3_pcode")
+  ) |>
+  st_as_sf() |> 
+  ggplot() +
+  geom_sf(aes(fill = frequencies), linewidth =.1) +
+  geom_sf_text(aes(label = adm3_name), size = 1.5, colour = "grey40", alpha = .8,
+            nudge_x = -0.03, nudge_y = -0.02) +
+  # geom_sf_text(aes(label = comma(frequencies)), size = 2) +
+  scale_fill_continuous(high = "#004987", low = "#e3edf6", labels = comma, na.value = "grey97", 
+                        trans = "log10") +
+  facet_wrap(~sector) + 
+  labs(title = "Number of Beneficiary frequencies reached, by municipality", 
+       subtitle = paste0("As of ", consolidated_date, ", from the 5Ws; includes double counting"), 
+       x = "", y = "", 
+       fill = "Number of\nfrequencies\n(log)") + 
+  theme(strip.background = element_rect(fill = "black"), 
+        axis.text.x = element_text(size = 5), 
+        axis.text.y = element_text(size = 5), 
+        panel.grid.major = element_line(color = "gray90"),
+        panel.grid.minor = element_line(color = "gray90"))
+```
+
+
+```{r}
+adm3 |> 
+  filter(adm3_name == "Rasuwa") |> 
+  ggplot() + 
+  geom_sf() +
+  geom_sf(data = settlements |> filter(adm2_en == "Rasuwa" & fclass != "hamlet"), 
+          aes(geometry = geometry, size = point_size), colour = "#ffc800")
+```
+
+
+# Working
+
+```{r}
+# Two versions, depends on the structure of the excel file
+ward_fill_filter <- function(tbl) {
+  tbl |> 
+    fill(province, .direction = "down") |>
+    fill(district, .direction = "down") |>
+    fill(municipality, .direction = "down") |>
+    filter(!is.na(ward))
+}
+
+ward_fill_filter2 <- function(tbl) {
+  tbl |> 
+    fill(province, .direction = "down") |>
+    fill(district, .direction = "down") |>
+    fill(municipality, .direction = "down") |>
+    fill(ward, .direction = "down") |> 
+    filter(!is.na(ward))
+}
+
+# District name cleaning
+bagmati_district_names <- function(tbl) {
+  tbl |>
+    mutate(province = "Bagmati") |> 
+    mutate(district = as.character(district)) |>
+    mutate(
+      district = case_when(
+        district == 23 ~ "Dolakha",
+        district == 24 ~ "Sindhupalchok",
+        district == 25 ~ "Rasuwa",
+        district == 26 ~ "Dhading",
+        district == 27 ~ "Nuwakot",
+        district == 28 ~ "Kathmandu",
+        district == 29 ~ "Bhaktapur",
+        district == 30 ~ "Lalitpur",
+        district == 31 ~ "Kavrepalanchok",
+        district == 32 ~ "Ramechhap",
+        district == 33 ~ "Sindhuli",
+        district == 34 ~ "Makwanpur",
+        district == 35 ~ "Chitawan",
+        TRUE ~ district
+      )
+    ) |> 
+    filter(name %out% c("Dolakha", "Sindhupalchok", "Rasuwa", "Dhading", 
+                      "Nuwakot", "Kathmandu", "Bhaktapur", "Lalitpur",
+                      "Kavrepalanchok", "Ramechhap", "Sindhuli", "Makwanpur", 
+                      "Chitawan", "NEPAL", "BAGMATI")) |> 
+  select(-municipality) |> 
+  rename(municipality = name) |> 
+  mutate(ward = ifelse(ward == "Total", "All Wards", ward))
+}
+
+gandaki_district_names <- function(tbl) {
+  tbl |>
+    mutate(province = "Gandaki") |>
+    mutate(district = as.character(district)) |>
+    mutate(
+      district = case_when(
+        district == 36 ~ "Gorkha",
+        district == 37 ~ "Manang",
+        district == 38 ~ "Mustang",
+        district == 39 ~ "Myagdi",
+        district == 40 ~ "Kaski",
+        district == 41 ~ "Lamjung",
+        district == 42 ~ "Tanahu",
+        district == 43 ~ "Nawalparasi East",
+        district == 44 ~ "Syangja",
+        district == 45 ~ "Parbat",
+        district == 46 ~ "Baglung",
+        TRUE ~ district
+      )
+    ) |> 
+    filter(name %out% c("Gorkha", "Manang", "Mustang", "Myagdi", "Kaski",
+                      "Lamjung", "Tanahu", "Nawalparasi East", "Syangja", "Parbat",
+                      "Baglung", "NEPAL", "GANDAKI")) |> 
+  select(-municipality) |> 
+  rename(municipality = name) |> 
+  mutate(ward = ifelse(ward == "Total", "All Wards", ward))
+}
+```
+
+
+```{r}
+agricultural_employment <- rbind(
+  read_xlsx("./data/Indv_Gandaki_EmpAgriAndNonAgriculture_Ward.xlsx", skip = 2) |> 
+  setNames(
+    c("province", "district", "municipality", "name", "ward",
+    "employed_population_total", 
+    "employed_population_male", 
+    "employed_population_female", 
+    "agricultural_employment_total", 
+    "agricultural_employment_male", 
+    "agricultural_employment_female", 
+    "non_agricultural_employment_total", 
+    "non_agriculrual_employment_male", 
+    "non_agricultural_employment_female", 
+    "agricultural_employment_pc_total", 
+    "agricultural_employment_pc_male", 
+    "agricultural_employment_pc_female", 
+    "non_agricultural_employment_pc_total", 
+    "non_agriculrual_employment_pc_male", 
+    "non_agricultural_employment_pc_female")
+  ) |> 
+  ward_fill_filter() |> 
+  gandaki_district_names(),
+
+read_xlsx("./data/Indv_Bagmati_EmpAgriAndNonAgriculture_Ward.xlsx", skip = 2) |> 
+  setNames(
+    c("province", "district", "municipality", "name", "ward",
+    "employed_population_total", 
+    "employed_population_male", 
+    "employed_population_female", 
+    "agricultural_employment_total", 
+    "agricultural_employment_male", 
+    "agricultural_employment_female", 
+    "non_agricultural_employment_total", 
+    "non_agriculrual_employment_male", 
+    "non_agricultural_employment_female", 
+    "agricultural_employment_pc_total", 
+    "agricultural_employment_pc_male", 
+    "agricultural_employment_pc_female", 
+    "non_agricultural_employment_pc_total", 
+    "non_agriculrual_employment_pc_male", 
+    "non_agricultural_employment_pc_female")
+  ) |> 
+  ward_fill_filter() |> 
+  bagmati_district_names())
+```
+
+```{r}
+agricultural_employment |> 
+  filter(district == "Rasuwa") |>
+  #group_by(municipality) |> 
+  summarise(ag_em_total = sum(agricultural_employment_total), 
+            em_total = sum(employed_population_total)) |> 
+  mutate(pc = ag_em_total / em_total)
+  summarise(ag_em_pc = mean(agricultural_employment_pc_total))
+  arrange(desc(agricultural_employment_pc_total))
+```
+```{r}
+agricultural_employment |> 
+  filter(district == "Rasuwa") |>
+  select(municipality, ward, agricultural_employment_pc_total)
+  glimpse()
+```
+
