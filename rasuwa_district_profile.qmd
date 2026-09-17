@@ -1,7 +1,7 @@
 ---
 title: "Rasuwa District Profile"
 author: "UN Nepal & iMMAP"
-date-modified: "16 September 2026"
+date-modified: "17 September 2026"
 execute: 
   echo: false
 ---
@@ -249,9 +249,11 @@ The [population](https://censusresults.nsonepal.gov.np/) of Rasuwa district is `
 
 As of the 2021 Census, there were `r filter(census_flat, district == "Rasuwa")  %>% {sum(.$population_with_disabilities, na.rm = TRUE)} |> format(big.mark = ",")` people with disabilities in the district, though it should be noted that this figure relies on self-reporting, so the actual number might be much higher.
 
+Clicking on any of the maps will lead you to a larger version of the map. 
+
 <br>
 
-[![](./plots/rasuwa_poorest_quintile_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_poorest_quintile_map.png)
+[![](./plots/rasuwa_poorest_quintile.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_poorest_quintile.png)
 
 
 <br><br><br>
@@ -296,6 +298,8 @@ municipal_damage_losses |>
 <br>
 
 Gosaikunda has been the focus of response activities in Rasuwa. From the beneficiary frequencies table below (which is inclusive of double counting, and thus indicative of where agencies have focused their resources), we can see that affected persons in Rasuwa have been reached primarily by Food Security and WASH activities. 
+
+Clicking on any of the 5W maps and tables will lead to the 5Ws PowerBI dashboard. 
 
 <br>
 
