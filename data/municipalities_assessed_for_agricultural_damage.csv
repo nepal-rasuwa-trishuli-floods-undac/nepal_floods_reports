@@ -1,0 +1,17 @@
+district,adm2_pcode,municipality,adm3_pcode,paddy_baseline_hectares,paddy_affected_hectares,paddy_tonnes,vegetables_baseline_hectares,vegetables_affected_hectares,vegetables_tonnes,total_no_of_holdings,total_area_of_area_of_holdings_hectare,total_no_of_arable_land_holdings,total_area_of_arable_area_ha,temporary_crop_holdings_number,temporary_crop_area_ha
+Nuwakot,NP0328,Bidur,NP0328301,1415,700,2450,490,98,1323,8974,3348,8958,2847,8926,2670
+Nuwakot,NP0328,Belkotgadhi,NP0328302,1673,200,700,0,0,0,8338,4622,8281,4184,8281,4003
+Nuwakot,NP0328,Likhu,NP0328406,550,230,805,0,0,0,3945,1640,3932,1375,3932,1319
+Rasuwa,NP0329,Gosaikunda,NP0329402,234,140,491,0,0,0,1313,655,1300,514,1290,382
+Rasuwa,NP0329,Uttargaya,NP0329403,238,143,500,0,0,0,1809,628,1809,524,1809,474
+Dhading,NP0330,Siddhalek,NP0330407,2320,58,204,2615,2,27,5523,2658,5496,2283,5496,2143
+Dhading,NP0330,Benighat Rorang,NP0330408,1530,25,89,3200,9,122,5866,2282,5825,1933,5804,1879
+Dhading,NP0330,Gajuri,NP0330409,3556,75,264,1949,7,95,5024,2143,4982,1868,4962,1745
+Dhading,NP0330,Galchhi,NP0330410,3460,87,303,2775,14,182,4958,2125,4887,1896,4887,1703
+Chitawan,NP0335,Bharatpur,NP0335101,0,0,0,0,0,0,37094,14312,36470,12668,3647,12338
+Chitawan,NP0335,Ichchha Kamana,NP0335401,0,0,0,0,0,0,4488,1936,4463,1575,4463,1418
+Gorkha,NP0436,Shahid Lakhan,NP0436408,1778,7,23,2315,3,41,6177,3328,6078,2793,6078,2481
+Gorkha,NP0436,Gandaki,NP0436409,371,4,14,1756,4,54,5518,2370,5505,1995,5505,1803
+Tanahu,NP0440,Bandipur,NP0440404,0,0,0,0,0,0,3796,1812,3725,1529,3725,1427
+Tanahu,NP0440,Aanbu Khaireni,NP0440405,0,0,0,0,0,0,3133,1008,3041,735,3032,635
+Tanahu,NP0440,Devghat,NP0440406,0,0,0,0,0,0,2946,1560,2897,1092,2897,1002

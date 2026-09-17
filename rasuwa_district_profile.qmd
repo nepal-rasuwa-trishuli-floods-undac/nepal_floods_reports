@@ -233,7 +233,7 @@ wards_joined <- wards |>
   ) 
 
 population_projections <- read_csv("./data/population_projections_2026_affected_wards_flat.csv")
-#[![](./plots/asia_pacific_event_types_grey.gif)](https://github.com/risk-anticipation-hub/conflict-trends-asia-pacific/raw/main/plots/asia_pacific_event_types_grey.gif)
+
 ```
 
 # Introduction
@@ -278,7 +278,7 @@ municipal_damage_losses |>
          Businesses_affected = estimated_affected_establishments, 
          Total_damage_incl._households_assets_npr_crore = total_damage_including_household_assets_npr_crore) |> 
   arrange(desc(Total_damage_incl._households_assets_npr_crore)) |>
-  kable(caption = "Economic impacts and losses in Rasuwa") |> 
+  kable(caption = "Economic impacts and losses in Rasuwa, NDRRMA Rapid Disaster Needs Assessment") |> 
   kable_classic(full_width = F) |> 
   kable_styling(bootstrap_options = "striped")
  # flextable() |> 
@@ -290,109 +290,35 @@ municipal_damage_losses |>
 
 # Response
 
-[![](./plots/rasuwa_reached_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_reached_map.png)
+
+[![NDRRMA 5Ws 20260917](./plots/rasuwa_municipality_reached_powerbi.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
+
+<br>
+
+Gosaikunda has been the focus of response activities in Rasuwa. From the beneficiary frequencies table below (which is inclusive of double counting, and thus indicative of where agencies have focused their resources), we can see that affected persons in Rasuwa have been reached primarily by Food Security and WASH activities. 
+
+<br>
+
+[![NDRRMA 5Ws 20260917](./plots/rasuwa_reached_by_cluster.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
 
 
 <br>
 
-The majority of the individuals reached have been in Gosaikunda. However, as we can see from the beneficiary frequencies map below (which is inclusive of double counting, and thus indicative of where agencies have focused their resources), affected persons in Gosaikunda have been reached primarily by WASH activities. 
-
-<br>
-
-[![](./plots/rasuwa_frequencies_facet_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_frequencies_facet_map.png)
+We still lack more granular data. Almost none of the activities in Rasuwa have been reported at ward level. Uttargaya is the municipality with the best ward-level reporting. 2,958 beneficiary frequencies (inclusive of double counting) have no municipality reported at all. Without ward-level data, it will not be possible to tell on which side of the river activities have occurred. 
 
 
-<br>
-
-We still lack more granular data. As can be seen from the table below, almost none of the activities in Gosaikunda have been reported at ward level. Uttargaya is the municipality with the best ward-level reporting. 2,958 beneficiary frequencies (inclusive of double counting) have no municipality reported at all. Withouth ward-level data, it will not be possible to tell on which side of the river activities have occurred. 
-
-<br>
-
-```{r frequencies-table}
-consolidated |> 
-  filter(district == "Rasuwa") |> 
-  mutate(has_ward = case_when(
-    ward < 14 ~ "yes", 
-    is.na(ward) ~ "no", 
-    TRUE ~ "no"
-  )) |> 
-  group_by(municipality, has_ward) |> 
-  summarise(
-    individuals_reached = sum(individuals_reached, na.rm = TRUE), 
-    .groups = "drop") |> 
-  pivot_wider(
-    names_from = has_ward, 
-    values_from = individuals_reached
-  ) |> 
-  rename(ward_reported = yes, 
-         no_ward = no) |> 
-  replace_na(list(ward_reported = 0)) |> 
-  mutate(pc_with_ward = ifelse(no_ward == 0 & ward_reported == 0, 
-                               0, 
-                               round(ward_reported / (ward_reported + no_ward) * 100, 2))) |> 
-  kable(caption = "Ward-level reporting of beneficiary frequencies") |> 
-  kable_classic(full_width = F) |> 
-  kable_styling(bootstrap_options = "striped")
-
- # flextable() |> 
- # theme_zebra() |> 
- # flextable::set_caption(as_paragraph(as_chunk("Ward-level reporting of beneficiary frequencies")))
-```
 
 <br><br><br>
 
 ## Agency presence
 
-[![](./plots/rasuwa_sector_agencies_facet_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_sector_agencies_facet_map.png)
-
-
-<br>
-
-Sector presence, however, tells a very different story from where beneficiary frequencies were reached. Somewhat commonsensically, agency presence is highest in Uttargaya, the most accessible part of the district. It should also be mentioned that Dhunche, the district seat and the location of the District Administration Office, is located in the lower reaches of Gosaikunda. 
+Agency presence is highest in Uttargaya, the most accessible part of the district. 
 
 <br>
 
-```{r}
-consolidated |> 
-  filter(district == "Rasuwa") |> 
-  mutate(sector = ifelse(str_detect(sector, "Protection"), "Protection", sector), 
-         sector = ifelse(str_detect(sector, "Health"), "Health", sector)) |> 
-  filter(sector %out% c("ETC")) |> 
-  filter(province != "Karnali") |> 
-  mutate(adm2_pcode = ifelse(str_detect(district, "Nuwakot") & is.na(adm2_pcode), "NP0328", adm2_pcode)) |> 
-  mutate(duplicate = ifelse(
-    implementing_partner == lead_agency, 
-    1, 0
-  )) |> 
-  mutate(implementing_partner = ifelse(
-    duplicate == 1, NA_character_, implementing_partner
-  )) |> 
-  pivot_longer(
-    lead_agency:implementing_partner, 
-    names_to = "role",
-    values_to = "agencies"
-  ) |> 
-  filter(!is.na(agencies)) |>  
-  filter(!is.na(sector)) |> 
-  distinct(adm2_pcode, district, adm3_pcode, municipality, agencies) |> 
-  filter(!is.na(municipality) | !is.na(adm3_pcode)) |> 
-  group_by(
-    adm2_pcode, district, adm3_pcode, 
-    municipality
-  ) |> 
-  summarise(num_agencies = n_distinct(agencies),
-            agencies = paste0(agencies, collapse = ", "), 
-            .groups = "drop") |> 
-  select(-adm2_pcode, -adm3_pcode) |> 
-  kable(caption = "Agencies by municipality") |> 
-  kable_classic(full_width = TRUE) |> 
-  kable_styling(bootstrap_options = "striped")
+[![NDRRMA 5Ws 20260917](./plots/rasuwa_agencies_powerbi.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
 
- # flextable() |> 
- # theme_zebra() |> 
- # flextable::set_caption(as_paragraph(as_chunk("Agencies by municipality")))|> 
- # flextable::autofit()
-```
+
 
 <br><br><br>
 
@@ -400,13 +326,25 @@ consolidated |>
 
 ## Interactive Reference Table
 
+
 ```{r}
 census_flat |> 
   filter(district == "Rasuwa") |>
+  left_join(
+    read_csv("./data/population_projections_2026_affected_wards_flat.csv") |> 
+      select(
+        population_2026 = projection_2026_population_total, 
+        population_2026_male = projection_2026_population_male,
+        population_2026_female = projection_2026_population_female, 
+        affected, adm3_pcode, ward
+      ),
+    by = c("adm3_pcode", "ward")) |>
+  filter(affected == "affected") |> 
   select(municipality, ward,
-         total_households, population_total, sex_ratio, 
-         population_density, total_children_5_17, 
-         population_male, population_female, 
+         total_households, population_2026, sex_ratio, 
+         population_density, 
+         population_2026_male, 
+         population_2026_female, 
          total_dependency_ratio, 
          adm3_pcode) |> 
   mutate_at(vars(sex_ratio, population_density), ~ round(.x, 2)) |> 
@@ -414,7 +352,7 @@ census_flat |>
               options = list(pageLength = 10, scrollX = TRUE),
               caption = htmltools::tags$caption(style = "caption-side: top;
                                               text-align: center; font-size: 140%;",
-                                              "Selected Demographic Census Variables"))
+                                              "Selected Demographic Census Variables of Affected Wards; source: National Statistics Office, Nepal"))
  
 ```
 
@@ -422,15 +360,13 @@ census_flat |>
 
 ## Useful links and datasets
 
+### [Digitised NDRRMA Municipal Damage Tables](https://drive.google.com/drive/folders/1GehdusDNji6HGQGQ6R7cEHNJC3BwwNau?usp=drive_link)
+
+### [5W Dashboard](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
+
 ### [Consolidated Census ward-level household and population](https://drive.google.com/drive/folders/1gNkJJR6Q4psoCrWyBcUyzqL9wcKVVRbb?usp=drive_link)
 Variables include a breakdown of housing materials, wealth quintile, school attendance and household WASH. 
 
 ### [Logistics Cluster Access Map](https://logie.logcluster.org/?op=npl)
-Work is ongoing. 
+Updated regularly. 
 
-### [Geodata](https://drive.google.com/drive/folders/1_QuN6UTia2irDmADubMoklrvTptL9gbu?usp=drive_link)
-Includes ward-level shapefiles and settlement points.
-
-### [Digitised NDRRMA Municipal Damage Tables](https://drive.google.com/drive/folders/1GehdusDNji6HGQGQ6R7cEHNJC3BwwNau?usp=drive_link)
-
-### [5W Dashboard](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)

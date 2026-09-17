@@ -11,7 +11,7 @@
     "href": "rasuwa_district_profile.html#agency-presence",
     "title": "Rasuwa District Profile",
     "section": "Agency presence",
-    "text": "Agency presence\n\n\nSector presence, however, tells a very different story from where beneficiary frequencies were reached. Somewhat commonsensically, agency presence is highest in Uttargaya, the most accessible part of the district. It should also be mentioned that Dhunche, the district seat and the location of the District Administration Office, is located in the lower reaches of Gosaikunda.\n\n\n\n\nAgencies by municipality\n \n  \n    district \n    municipality \n    num_agencies \n    agencies \n  \n \n\n  \n    Rasuwa \n    Aamachhodingmo \n    3 \n    CBM, KOSHISH, HRDC \n  \n  \n    Rasuwa \n    Gosaikunda \n    24 \n    AWO International, CARDSN, CBM, KOSHISH, HRDC, CMC-Nepal, GEI ASIA, HAPSA Nepal, IOM, PLAN, DEPROSC Nepal, SCoN, UNDP, UNFPA, UNICEF, WFP, WHH, ASN, RRN, WHO, LG, WVI, KIRDARC Nepal, AH&H \n  \n  \n    Rasuwa \n    Uttargaya \n    40 \n    ActionAid, ADRA, GCYCN, BN, CARE Nepal, CSRC, CBM, KOSHISH, HRDC, CIN, UNICEF, CMC-Nepal, CRS, Caritas, Fastenaktion, WJR, HELVETAS Nepal, CWIN, FAO, GEI ASIA, Habitat for Humanity, HAPSA Nepal, IOM, IRW, PIN, PLAN, DEPROSC Nepal, Save the children, SCoN, Shanti Foundation, TPO, UN Women, ROYM, UNDP, UNFPA, NRCS, WHH, RRN, WVI, KIRDARC Nepal \n  \n  \n    Rasuwa \n    Kalika \n    15 \n    CBM, KOSHISH, HRDC, CMC-Nepal, UNICEF, CWIN, IOM, IRW, PLAN, DEPROSC Nepal, UNDP, WFP, WHH, RRN, LG \n  \n  \n    Rasuwa \n    Naukunda \n    2 \n    WVI, KIRDARC Nepal \n  \n  \n    Rasuwa \n    Langtang National Park \n    1 \n    WFP"
+    "text": "Agency presence\nAgency presence is highest in Uttargaya, the most accessible part of the district.\n\n\n\n\nNDRRMA 5Ws 20260917"
   },
   {
     "objectID": "rasuwa_district_profile.html#references-and-useful-datasets",
@@ -67,6 +67,6 @@
     "href": "rasuwa_district_profile.html#useful-links-and-datasets",
     "title": "Rasuwa District Profile",
     "section": "Useful links and datasets",
-    "text": "Useful links and datasets\n\nConsolidated Census ward-level household and population\nVariables include a breakdown of housing materials, wealth quintile, school attendance and household WASH.\n\n\nLogistics Cluster Access Map\nWork is ongoing.\n\n\nGeodata\nIncludes ward-level shapefiles and settlement points.\n\n\nDigitised NDRRMA Municipal Damage Tables\n\n\n5W Dashboard"
+    "text": "Useful links and datasets\n\nDigitised NDRRMA Municipal Damage Tables\n\n\n5W Dashboard\n\n\nConsolidated Census ward-level household and population\nVariables include a breakdown of housing materials, wealth quintile, school attendance and household WASH.\n\n\nLogistics Cluster Access Map\nUpdated regularly."
   }
 ]
