@@ -232,3 +232,65 @@ rasuwa_reached_map <- consolidated |>
 
 ggsave("./plots/rasuwa_reached_map.png", rasuwa_reached_map,
        height = 8.27, width = 11.69, units = "in")
+
+consolidated |> 
+  mutate(sector = ifelse(str_detect(sector, "Protection"), "Protection", sector), 
+         sector = ifelse(str_detect(sector, "Health|Nutrition"), "Health and Nutrition", sector)) |> 
+  filter(sector %out% c("ETC", "Logistics") & !is.na(sector)) |> 
+  filter(province != "Karnali") |>
+  group_by(district, adm2_pcode, municipality, adm3_pcode, sector, lead_agency, implementing_partner) |>
+  filter(district == "Rasuwa") |> 
+  summarise(
+    frequencies = sum(individuals_reached, na.rm = TRUE), 
+    .groups = "drop"
+  ) |> 
+  mutate(duplicate = ifelse(
+    implementing_partner == lead_agency, 
+    1, 0
+  )) |> 
+  mutate(implementing_partner = ifelse(
+    duplicate == 1, NA_character_, implementing_partner
+  )) |> 
+  pivot_longer(
+    lead_agency:implementing_partner, 
+    names_to = "role",
+    values_to = "agencies"
+  ) |> 
+  select(-frequencies, -duplicate) |> 
+  filter(!is.na(agencies)) |>  
+  group_by(district, adm2_pcode, municipality, adm3_pcode, sector) |> 
+  summarise(num_agencies = n_distinct(agencies), 
+            agencies_text = paste(agencies, collapse = ","), 
+            .groups = "drop") |> 
+  right_join(
+    adm3 |> filter(adm2_name %in% c("Rasuwa")), 
+    by = c("adm2_pcode", "adm3_pcode")
+  ) |>
+  mutate(num_agencies = as.numeric(num_agencies)) |>
+  mutate(label = paste0(adm3_name, "\n", num_agencies)) |> 
+  st_as_sf() |> 
+  ggplot() +
+  geom_sf(aes(fill = num_agencies), linewidth =.1) +
+  geom_sf_text(aes(label = adm3_name), size = 2, colour = "grey40", alpha = .8,
+               nudge_x = -0.02, nudge_y = -0.02) +
+  geom_sf_text(aes(label = num_agencies), size = 2) +
+  scale_fill_continuous(high = "#004987", low = "#e3edf6", labels = comma, na.value = "grey97") +
+  # scale_fill_continuous(palette = "Blues", 
+  #                       breaks = seq(1, 20, 2), 
+  #                       guide = guide_colorbar(barheight = unit(6, "cm"))) +
+  # scale_fill_viridis(direction = -1) + 
+  facet_wrap(~sector) + 
+  labs(title = "Number of agencies by sector, by municipality", 
+       subtitle = paste0("As of ", consolidated_date, ", from the 5Ws"), 
+       x = "", y = "", 
+       caption = "Source: 5Ws", 
+       fill = "Number of\nagencies") + 
+  theme(strip.background = element_rect(fill = "black"), 
+        axis.text.x = element_text(size = 5), 
+        axis.text.y = element_text(size = 5), 
+        panel.grid.major = element_line(color = "gray90"),
+        panel.grid.minor = element_line(color = "gray90"))
+
+ggsave("./plots/rasuwa_sector_agencies_facet_map.png", height = 8.27, width = 11.69, units = "in")
+
+[![](./plots/rasuwa_reached_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_reached_map.png)

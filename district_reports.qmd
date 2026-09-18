@@ -79,21 +79,32 @@ river_buffer <- st_read("./data/shapefiles/aoi_affd_aff_py_s3_govn_pp_AOI500mBuf
 
 river <- st_read("./data/shapefiles/Flood Extent Shape file/Flood extent_SHP.shp")
 
-holding_centres <- st_read("./data/shapefiles/npl_shel_shl_pt_s3_various_pp_holding_centre.shp")
-
 settlements <- st_read("./data/shapefiles/npl_stle_stl_pt_s0_osm_pp_settlements.shp") |> 
-  clean_names() |> 
-  mutate(point_size = case_when(
-    fclass == "hamlet" ~ .5, 
-    fclass == "village" ~ .7, 
-    fclass == "suburb" ~ .9,
-    fclass == "town" ~ 1.25, 
-    fclass == "city" ~ 1.5, 
-    fclass == "national_capital" ~ 2, 
-    TRUE ~ 10
-  ))
+  clean_names() 
 
 # river <- st_read("./data/shapefiles/Flood Extent.gpkg", options = "CONVERT_TO_LINEAR=YES") 
+
+holding_centres_join <- st_read("./data/shapefiles/npl_shel_shl_pt_s3_various_pp_holding_centre.shp") |> 
+  st_transform(st_crs(adm3)) |> 
+  st_join(
+    adm3
+  ) |> 
+  filter(!is.na(name)) %>%
+  filter(!st_is_empty(.)) %>%
+  select(where(~ !all(is.na(.)))) |> 
+  select(name, adm1_name, adm1_pcode, adm2_name, adm2_pcode, adm3_name, adm3_pcode, geometry) 
+
+holding_centres_complete <- holding_centres_join |> 
+  cbind(
+    st_coordinates(holding_centres_join$geometry)
+  ) |> 
+  clean_names()
+
+settlements_holding_centre <- rbind(settlements |>
+  select(fclass, geometry, adm2_pcode, adm3_pcode, adm2_en), 
+  holding_centres_join |>
+    mutate(fclass = "holding centre") |> 
+    select(fclass, geometry, adm2_pcode, adm3_pcode, adm2_en = adm2_name))
 
 ```
 
@@ -232,7 +243,6 @@ ward_cadastral <- read_csv("./data/ward_cadastral_damage.csv")
 
 
 
-
 # Plotting preparation
 
 ```{r capitals}
@@ -269,6 +279,7 @@ image_write((image_append(
 # Population
 
 
+
 ```{r}
 plot_ward_population <- function(district_name) {
   # census_working or census_flat will work 
@@ -297,10 +308,11 @@ plot_ward_population <- function(district_name) {
   # River
   geom_sf(data = river, colour = "#002e6e", fill = "#002e6e", alpha = .6) +
   # Settlements
-  geom_sf(data = settlements |> filter(adm2_en == district_name) |> 
-              mutate(fclass = str_to_title(fclass),
-                     fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town"))), 
-            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
+  geom_sf(data = settlements_holding_centre |> filter(adm2_en == district_name) |>  
+              mutate(fclass = str_to_title(fclass), 
+                     fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town", 
+                                                    "Holding Centre"))), 
+            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .4) +
     geom_text(data = capitals |> filter(district == district_name), aes(x = x, y = y, label = name), 
             size = 2.5, colour = "#ed1847", alpha = .8) +
     scale_colour_manual(values = c("Affected" = "#e56a54"), 
@@ -311,7 +323,8 @@ plot_ward_population <- function(district_name) {
     scale_shape_manual(values = c("Hamlet" = 20, 
                                   "Village" = 16, 
                                   "Suburb" = 15, 
-                                  "Town" = 17)) +
+                                  "Town" = 17, 
+                                  "Holding Centre" = 7)) +
   geom_shadowtext(
       aes(label = ward, 
           geometry = geometry), 
@@ -325,13 +338,12 @@ plot_ward_population <- function(district_name) {
        colour = "RDNA", 
        caption = "Source: National Population and Housing Census 2021; 2026 Ward-level Population Projections, National Statistics Office, NDRRMA Rapid Disaster Needs Assessment") + 
 # subtitle = "15 wards affected in Rasuwa. District Headqaurters labelled in red."    
-  guides(fill = guide_colorbar(override.aes = list(alpha = 1), 
-                             order = 1), 
-         shape = guide_legend(override.aes = list(alpha = 1), 
-                              order = 2), 
-         colour = guide_legend(order = 3))
+  guides(fill = guide_colorbar(override.aes = list(alpha = 1),
+                                 order = 1), 
+           shape = guide_legend(override.aes = list(alpha = 1),
+                                order = 2), 
+           colour = guide_legend(order = 3))
 }
-
 
 ```
 
@@ -381,10 +393,11 @@ plot_poorest_quintile <- function(district_name) {
     # River
     geom_sf(data = river, colour = "#002e6e", fill = "#002e6e", alpha = .6) +
     # Settlements
-    geom_sf(data = settlements |> filter(adm2_en == district_name) |> 
-              mutate(fclass = str_to_title(fclass),
-                     fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town"))), 
-            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
+    geom_sf(data = settlements_holding_centre |> filter(adm2_en == district_name) |>  
+              mutate(fclass = str_to_title(fclass), 
+                     fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town", 
+                                                    "Holding Centre"))), 
+            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .4) +
     geom_text(data = capitals |> filter(district == district_name), aes(x = x, y = y, label = name), 
             size = 2.5, colour = "#ed1847", alpha = .8) +
     scale_colour_manual(values = c("Affected" = "#e56a54"), 
@@ -394,7 +407,8 @@ plot_poorest_quintile <- function(district_name) {
     scale_shape_manual(values = c("Hamlet" = 20, 
                                   "Village" = 16, 
                                   "Suburb" = 15, 
-                                  "Town" = 17)) +
+                                  "Town" = 17, 
+                                  "Holding Centre" = 7)) +
     geom_shadowtext(
         aes(label = ward_label, 
             geometry = geometry), 
@@ -466,10 +480,11 @@ plot_impacted_buildings <- function(district_name) {
     # River
     geom_sf(data = river, colour = "#002e6e", fill = "#002e6e", alpha = .6) +
     # Settlements
-    geom_sf(data = settlements |> filter(adm2_en == district_name) |> 
-              mutate(fclass = str_to_title(fclass),
-                     fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town"))), 
-            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
+    geom_sf(data = settlements_holding_centre |> filter(adm2_en == district_name) |>  
+              mutate(fclass = str_to_title(fclass), 
+                     fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town", 
+                                                    "Holding Centre"))), 
+            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .4) +
     geom_text(data = capitals |> filter(district == district_name), aes(x = x, y = y, label = name), 
             size = 2.5, colour = "#ed1847", alpha = .8) +
     scale_colour_manual(values = c("Affected" = "#e56a54"), 
@@ -479,7 +494,8 @@ plot_impacted_buildings <- function(district_name) {
     scale_shape_manual(values = c("Hamlet" = 20, 
                                   "Village" = 16, 
                                   "Suburb" = 15, 
-                                  "Town" = 17)) +
+                                  "Town" = 17, 
+                                  "Holding Centre" = 7)) +
   geom_shadowtext(
       aes(label = ward_label, 
           geometry = geometry), 
@@ -552,10 +568,11 @@ plot_ward_cadastral <- function(district_name) {
     # River
     geom_sf(data = river, colour = "#002e6e", fill = "#002e6e", alpha = .6) +
     # Settlements
-    geom_sf(data = settlements |> filter(adm2_en == district_name) |> 
-              mutate(fclass = str_to_title(fclass),
-                     fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town"))), 
-            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
+    geom_sf(data = settlements_holding_centre |> filter(adm2_en == district_name) |>  
+              mutate(fclass = str_to_title(fclass), 
+                     fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town", 
+                                                    "Holding Centre"))), 
+            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .4) +
     geom_text(data = capitals |> filter(district == district_name), aes(x = x, y = y, label = name), 
             size = 2.5, colour = "#ed1847", alpha = .8) +
     scale_colour_manual(values = c("Affected" = "#e56a54"), 
@@ -565,7 +582,8 @@ plot_ward_cadastral <- function(district_name) {
     scale_shape_manual(values = c("Hamlet" = 20, 
                                   "Village" = 16, 
                                   "Suburb" = 15, 
-                                  "Town" = 17)) +
+                                  "Town" = 17, 
+                                  "Holding Centre" = 7)) +
     geom_shadowtext(
         aes(label = ward_label, 
             geometry = geometry), 
@@ -638,10 +656,11 @@ plot_reached <- function(district_name) {
     # River
     geom_sf(data = river, colour = "#002e6e", fill = "#002e6e") +
     # Settlements
-    geom_sf(data = settlements |> filter(adm2_en == district_name) |> 
-              mutate(fclass = str_to_title(fclass),
-                     fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town"))), 
-            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
+    geom_sf(data = settlements_holding_centre |> filter(adm2_en == district_name) |>  
+              mutate(fclass = str_to_title(fclass), 
+                     fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town", 
+                                                    "Holding Centre"))), 
+            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .4) +
     geom_text(data = capitals |> filter(district == district_name), aes(x = x, y = y, label = name), 
             size = 2.5, colour = "#ed1847", alpha = .8) +
     scale_colour_manual(values = c("Affected" = "#e56a54"), 
@@ -650,7 +669,8 @@ plot_reached <- function(district_name) {
     scale_shape_manual(values = c("Hamlet" = 20, 
                                   "Village" = 16, 
                                   "Suburb" = 15, 
-                                  "Town" = 17)) +
+                                  "Town" = 17, 
+                                  "Holding Centre" = 7)) +
      geom_shadowtext(
         aes(label = municipal_label, 
             geometry = geometry), 
@@ -1179,7 +1199,7 @@ read_xlsx("./data/Indv_Bagmati_EmpAgriAndNonAgriculture_Ward.xlsx", skip = 2) |>
 
 ```{r}
 agricultural_employment |> 
-  filter(district == "Rasuwa") |>
+  filter(district == "Nuwakot") |>
   #group_by(municipality) |> 
   summarise(ag_em_total = sum(agricultural_employment_total), 
             em_total = sum(employed_population_total)) |> 
@@ -1187,9 +1207,11 @@ agricultural_employment |>
   summarise(ag_em_pc = mean(agricultural_employment_pc_total))
   arrange(desc(agricultural_employment_pc_total))
 ```
+
+
 ```{r}
 agricultural_employment |> 
-  filter(district == "Rasuwa") |>
+  filter(district == "Nuwakot") |>
   select(municipality, ward, agricultural_employment_pc_total)
   glimpse()
 ```

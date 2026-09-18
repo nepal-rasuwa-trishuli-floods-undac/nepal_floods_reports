@@ -1,5 +1,4 @@
 ---
----
 title: "Nuwakot District Profile"
 author: "UN Nepal & iMMAP"
 date-modified: "17 September 2026"
@@ -216,6 +215,7 @@ census_working <- census_flat |>
            ) |>
   select(province, district, municipality, adm1_pcode:ward,
          total_households, population_total, 
+         average_household_size,
          population_with_disabilities, 
          population_pc_urban, 
          house_quality_least_adequate_pc, house_quality_inadequate_pc, 
@@ -239,49 +239,62 @@ population_projections <- read_csv("./data/population_projections_2026_affected_
 
 # Introduction
 
-```{r}
-differences |> glimpse()
+
+[![](./plots/nuwakot_population_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/nuwakot_population_map.png)
+
+<br>
+
+The [population](https://censusresults.nsonepal.gov.np/) of the affected wards in Nuwakot district is `r filter(population_projections, district == "Nuwakot") %>% {sum(.$projection_2026_population_total)}  |> format(big.mark = ",")`. Of the `r census_flat |> filter(district == "Nuwakot") |> nrow()` wards in Nuwakot district, `r differences |> filter(district == "Nuwakot") |> nrow()` have been affected by the flooding, according to the NDRRMA. 
+
+15.80% (11,616) out of the 73,571 [households](https://censusresults.nsonepal.gov.np/) in Nuwakot are in the poorest quintile of households nationally, below the average for Nepal. The flood-affected wards are the densest, most urbanised and heavily-populated of the wards within the district. 
+
+
+```{r eval=FALSE}
+census_working |> 
+  left_join(
+    differences |> 
+      select(adm3_pcode, ward, rdna_affected), 
+    by = c("adm3_pcode", "ward")
+  ) |> 
+  filter(rdna_affected == 1) |> 
+  mutate(population_poorest_quintile = wealth_quintile_poorest_quintile_count * 
+           average_household_size) %>%
+  {sum(.$population_poorest_quintile)}
 ```
 
 
 
-[![](./plots/rasuwa_population_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_population_map.png)
+<br>
+
+[![](./plots/nuwakot_poorest_quintile.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/nuwakot_poorest_quintile.png)
 
 <br>
 
-The [population](https://censusresults.nsonepal.gov.np/) of the affected wards in Nuwakot district is `r filter(differences, district == "Nuwakot") %>% {sum(.$projection_2026_population_total)}  |> format(big.mark = ",")`. Of the `r census_flat |> filter(district == "Nuwakot") |> nrow()` wards in Rasuwa district, `r differences |> filter(district == "Rasuwa") |> nrow()` have been affected by the flooding, according to the NDRRMA. 
+The relative affluence (compared to the other wards within the district) and commercial importance of the affected wards not only means that there will be outsized economic impacts, but also that the number of poor persons most vulnerable to economic shocks will be the greatest. There are 5,985 households or 24,507 within the affected wards who are in the poorest quintile of households nationally. 
 
-20% (2,225) out of the 11,131 [households](https://censusresults.nsonepal.gov.np/) in Rasuwa are in the poorest quintile of households nationally, in line with the average for Nepal. Of the affected wards, Gosaikunda-1 and Uttargaya-1 are of particular concern, given the particularly high percentages of their populations who are in the poorest quintile nationally. 
-
-As of the 2021 Census, there were `r filter(census_flat, district == "Rasuwa")  %>% {sum(.$population_with_disabilities, na.rm = TRUE)} |> format(big.mark = ",")` people with disabilities in the district, though it should be noted that this figure relies on self-reporting, so the actual number might be much higher.
+As of the 2021 Census, there were `r filter(census_flat, district == "Nuwakot")  %>% {sum(.$population_with_disabilities, na.rm = TRUE)} |> format(big.mark = ",")` people with disabilities in the district, though it should be noted that this figure relies on self-reporting, so the actual number might be much higher.
 
 Clicking on any of the maps will lead you to a larger version of the map. 
-
-<br>
-
-[![](./plots/rasuwa_poorest_quintile.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_poorest_quintile.png)
 
 
 <br><br><br>
 
 # Needs
 
-[![](./plots/rasuwa_impacted_buildings.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_impacted_buildings.png)
+[![](./plots/nuwakot_impacted_buildings.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/nuwakot_impacted_buildings.png)
 
 
 <br>
 
-Based on the NDRRMA Rapid Disaster Needs Assessment, `r filter(municipal_damage_losses, district == "Rasuwa") %>% {sum(.$impacted_buildings, na.rm = TRUE)} |> format(big.mark = ",")` buildings were damaged in the floods. This damage to housing private buildings has affected `r filter(municipal_damage_losses, district == "Rasuwa") %>% {sum(.$impacted_population_total, na.rm = TRUE)} |> format(big.mark = ",")` people. 
+Based on the NDRRMA Rapid Disaster Needs Assessment, `r filter(municipal_damage_losses, district == "Nuwakot") %>% {sum(.$impacted_buildings, na.rm = TRUE)} |> format(big.mark = ",")` buildings were damaged in the floods. This damage to housing private buildings has affected `r filter(municipal_damage_losses, district == "Nuwakot") %>% {sum(.$impacted_population_total, na.rm = TRUE)} |> format(big.mark = ",")` people. Kispang-5 had the highest number of damaged buildings. 
 
-Gosaikunda-2 received, by far, the most damage to its land area. However, agricultural employment in Gosaikunda-2 was quite minimal at 8% of the employed population. This is in contrast to 46% across the rest of the municipality and 68% for the rest of the district. 
-
-It should still be noted that businesses and households in Gosaikunda experienced the most damage and losses out of all the affected municipalities in Rasuwa, with only Bidur reporting greater damage and losses (Bidur's population is far greater) across all the flood-affected areas. 
+Bidur municipality reported the highest number of affected businesses and the greatest number of total damage and lost household assets across all affected municipalities. 
 
 <br>
 
 ```{r}
 municipal_damage_losses |> 
-  filter(district == "Rasuwa") |> 
+  filter(district == "Nuwakot" & !is.na(total_damage_including_household_assets_npr_crore)) |> 
   select(municipality, 
          Businesses_affected = estimated_affected_establishments, 
          Total_damage_incl._households_assets_npr_crore = total_damage_including_household_assets_npr_crore) |> 
@@ -294,27 +307,63 @@ municipal_damage_losses |>
  # flextable::set_caption(as_paragraph(as_chunk("Economic impacts and losses in Rasuwa")))
 ```
 
+<br>
+
+In contrast, agricultural land was most affected further downstream, primarily in Belkotgadhi-7, Bidur-3 and Bidur-6. 79% of Belkotgadhi and 52% of Bidur's working populations are employed in the agricultural sector. 
+
+<br>
+
+[![](./plots/nuwakot_cadastral_affected.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/nuwakot_cadastral_affected.png)
+
+
 <br><br><br>
 
 # Response
 
 
-[![NDRRMA 5Ws 20260917](./plots/rasuwa_municipality_reached_powerbi.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
+[![NDRRMA 5Ws 20260918](./plots/nuwakot_municipality_reached_powerbi.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
 
 <br>
 
-Gosaikunda has been the focus of response activities in Rasuwa. From the beneficiary frequencies table below (which is inclusive of double counting, and thus indicative of where agencies have focused their resources), we can see that affected persons in Rasuwa have been reached primarily by Food Security and WASH activities. 
+Bidur Municipality has been the focus of response activities in Nuwakot. From the beneficiary frequencies table below (which is inclusive of double counting, and thus indicative of where agencies have focused their resources), we can see that affected persons have been reached primarily by WASH activities. 
 
 Clicking on any of the 5W maps and tables will lead to the 5Ws PowerBI dashboard. 
 
 <br>
 
-[![NDRRMA 5Ws 20260917](./plots/rasuwa_reached_by_cluster.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
+[![NDRRMA 5Ws 20260918](./plots/nuwakot_reached_by_cluster.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
 
 
 <br>
 
-We still lack more granular data. Almost none of the activities in Rasuwa have been reported at ward level. Uttargaya is the municipality with the best ward-level reporting. 2,958 beneficiary frequencies (inclusive of double counting) have no municipality reported at all. Without ward-level data, it will not be possible to tell on which side of the river activities have occurred. 
+Nuwakot currently has the best granular reporting out of the affected districts: 62.6% of the beneficiary frequencies reached have been reported at the ward level. Of these beneficiary frequencies, 64.6% of them were in wards 2, 4, 5 and 7 in Bidur. All these wards are in the urban core of Bidur or surround it, and are the location of numerous holding centres for displaced persons. However, relatively few activities have been reported at site level so it is not possible to determine how much of this higher level of support in Bidur is due to its comparative accessibility or due to the presence of numerous holding centres. 
+
+
+```{r eval=FALSE}
+consolidated |> 
+  filter(district == "Nuwakot" & ward < 15) |> 
+  group_by(municipality, ward) |> 
+  summarise(individuals_reached = sum(individuals_reached, na.rm = TRUE)) |> 
+  arrange(desc(individuals_reached)) %>%
+  {sum(.$individuals_reached)}
+
+consolidated |> 
+  filter(district == "Nuwakot" & ward == 7) |> 
+  group_by(activity) |> 
+  summarise(
+    individuals_reached = sum(individuals_reached, na.rm = TRUE)
+  ) |> 
+  arrange(desc(individuals_reached))
+
+consolidated |> 
+  filter(district == "Nuwakot") |> 
+  mutate(holding_centre = ifelse(!is.na(holding_centre_displacement_site), "yes", "no")) |> 
+  group_by(municipality, ward, holding_centre) |> 
+  summarise(individuals_reached = sum(individuals_reached), 
+            .groups = "drop") |> 
+  pivot_wider(names_from = holding_centre, 
+              values_from = individuals_reached)
+```
 
 
 
@@ -322,11 +371,11 @@ We still lack more granular data. Almost none of the activities in Rasuwa have b
 
 ## Agency presence
 
-Agency presence is highest in Uttargaya, the most accessible part of the district. 
+Agency presence is highest in Bidur, the district seat and the most affected part of the district. 
 
 <br>
 
-[![NDRRMA 5Ws 20260917](./plots/rasuwa_agencies_powerbi.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
+[![NDRRMA 5Ws 20260918](./plots/nuwakot_agencies_powerbi.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
 
 
 
@@ -339,7 +388,7 @@ Agency presence is highest in Uttargaya, the most accessible part of the distric
 
 ```{r}
 census_flat |> 
-  filter(district == "Rasuwa") |>
+  filter(district == "Nuwakot") |>
   left_join(
     read_csv("./data/population_projections_2026_affected_wards_flat.csv") |> 
       select(
@@ -380,6 +429,5 @@ Variables include a breakdown of housing materials, wealth quintile, school atte
 ### [Logistics Cluster Access Map](https://logie.logcluster.org/?op=npl)
 Updated regularly. 
 
-title: "Untitled"
----
+
 
