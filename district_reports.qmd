@@ -312,7 +312,7 @@ plot_ward_population <- function(district_name) {
               mutate(fclass = str_to_title(fclass), 
                      fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town", 
                                                     "Holding Centre"))), 
-            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .4) +
+            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
     geom_text(data = capitals |> filter(district == district_name), aes(x = x, y = y, label = name), 
             size = 2.5, colour = "#ed1847", alpha = .8) +
     scale_colour_manual(values = c("Affected" = "#e56a54"), 
@@ -397,7 +397,7 @@ plot_poorest_quintile <- function(district_name) {
               mutate(fclass = str_to_title(fclass), 
                      fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town", 
                                                     "Holding Centre"))), 
-            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .4) +
+            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
     geom_text(data = capitals |> filter(district == district_name), aes(x = x, y = y, label = name), 
             size = 2.5, colour = "#ed1847", alpha = .8) +
     scale_colour_manual(values = c("Affected" = "#e56a54"), 
@@ -484,7 +484,7 @@ plot_impacted_buildings <- function(district_name) {
               mutate(fclass = str_to_title(fclass), 
                      fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town", 
                                                     "Holding Centre"))), 
-            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .4) +
+            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
     geom_text(data = capitals |> filter(district == district_name), aes(x = x, y = y, label = name), 
             size = 2.5, colour = "#ed1847", alpha = .8) +
     scale_colour_manual(values = c("Affected" = "#e56a54"), 
@@ -536,7 +536,7 @@ ggsave("./plots/rasuwa_impacted_buildings.png", rasuwa_impacted_buildings,
        height = 8.27, width = 11.69, units = "in")
 
 nuwakot_impacted_buildings <- plot_impacted_buildings("Nuwakot") + 
-  coord_sf(xlim = c(84.98, 85.5), ylim = c(27.75, 28.1), expand = TRUE) + 
+  coord_sf(xlim = c(84.99, 85.25), ylim = c(27.80, 28.05), expand = TRUE) + 
   labs(subtitle = "3,977 buildings damaged in Nuwakot. District Headqaurters labelled in red.")
 
 ggsave("./plots/nuwakot_impacted_buildings.png", nuwakot_impacted_buildings,
@@ -572,7 +572,7 @@ plot_ward_cadastral <- function(district_name) {
               mutate(fclass = str_to_title(fclass), 
                      fclass = fct_relevel(fclass, c("Hamlet", "Village", "Suburb", "Town", 
                                                     "Holding Centre"))), 
-            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .4) +
+            aes(geometry = geometry, shape = fclass), colour = "#ffc800", alpha = .5) +
     geom_text(data = capitals |> filter(district == district_name), aes(x = x, y = y, label = name), 
             size = 2.5, colour = "#ed1847", alpha = .8) +
     scale_colour_manual(values = c("Affected" = "#e56a54"), 
@@ -621,7 +621,7 @@ ggsave("./plots/rasuwa_cadastral_affected.png", rasuwa_cadastral_affected,
        height = 8.27, width = 11.69, units = "in")
 
 nuwakot_cadastral_affected <- plot_ward_cadastral("Nuwakot") + 
-  coord_sf(xlim = c(84.98, 85.5), ylim = c(27.75, 28.1), expand = TRUE) + 
+  coord_sf(xlim = c(84.99, 85.25), ylim = c(27.80, 28.05), expand = TRUE) + 
   labs(subtitle = "17 wards affected in Nuwakot. District Headquarters labelled in red.")
 
 ggsave("./plots/nuwakot_cadastral_affected.png", nuwakot_cadastral_affected,
