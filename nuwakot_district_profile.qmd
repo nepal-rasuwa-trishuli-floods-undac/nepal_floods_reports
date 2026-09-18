@@ -1,5 +1,6 @@
 ---
-title: "Rasuwa District Profile"
+---
+title: "Nuwakot District Profile"
 author: "UN Nepal & iMMAP"
 date-modified: "17 September 2026"
 execute: 
@@ -238,12 +239,17 @@ population_projections <- read_csv("./data/population_projections_2026_affected_
 
 # Introduction
 
+```{r}
+differences |> glimpse()
+```
+
+
 
 [![](./plots/rasuwa_population_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/rasuwa_population_map.png)
 
 <br>
 
-The [population](https://censusresults.nsonepal.gov.np/) of the flood-affected wards in Rasuwa district is `r filter(population_projections, district == "Rasuwa") %>% {sum(.$projection_2026_population_total)}  |> format(big.mark = ",")`. Of the `r census_flat |> filter(district == "Rasuwa") |> nrow()` wards in Rasuwa district, `r differences |> filter(district == "Rasuwa") |> nrow()` have been affected by the flooding, according to the NDRRMA. 
+The [population](https://censusresults.nsonepal.gov.np/) of the affected wards in Nuwakot district is `r filter(differences, district == "Nuwakot") %>% {sum(.$projection_2026_population_total)}  |> format(big.mark = ",")`. Of the `r census_flat |> filter(district == "Nuwakot") |> nrow()` wards in Rasuwa district, `r differences |> filter(district == "Rasuwa") |> nrow()` have been affected by the flooding, according to the NDRRMA. 
 
 20% (2,225) out of the 11,131 [households](https://censusresults.nsonepal.gov.np/) in Rasuwa are in the poorest quintile of households nationally, in line with the average for Nepal. Of the affected wards, Gosaikunda-1 and Uttargaya-1 are of particular concern, given the particularly high percentages of their populations who are in the poorest quintile nationally. 
 
@@ -373,4 +379,7 @@ Variables include a breakdown of housing materials, wealth quintile, school atte
 
 ### [Logistics Cluster Access Map](https://logie.logcluster.org/?op=npl)
 Updated regularly. 
+
+title: "Untitled"
+---
 
