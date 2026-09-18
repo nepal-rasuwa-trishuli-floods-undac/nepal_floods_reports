@@ -1,5 +1,5 @@
 ---
-title: "Nuwakot District Profile"
+title: "Dhading District Profile"
 author: "UN Nepal & iMMAP"
 date-modified: "17 September 2026"
 execute: 
@@ -240,13 +240,14 @@ population_projections <- read_csv("./data/population_projections_2026_affected_
 # Introduction
 
 
-[![](./plots/nuwakot_population_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/nuwakot_population_map.png)
+[![](./plots/dhading_population_map.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/dhading_population_map.png)
 
 <br>
 
-The [population](https://censusresults.nsonepal.gov.np/) of the affected wards in Nuwakot district is `r filter(population_projections, district == "Nuwakot") %>% {sum(.$projection_2026_population_total)}  |> format(big.mark = ",")`. Of the `r census_flat |> filter(district == "Nuwakot") |> nrow()` wards in Nuwakot district, `r differences |> filter(district == "Nuwakot") |> nrow()` have been affected by the flooding, according to the NDRRMA. 
 
-15.80% (11,616) out of the 73,571 [households](https://censusresults.nsonepal.gov.np/) in Nuwakot are in the poorest quintile of households nationally, below the average for Nepal. The flood-affected wards are the densest, most urbanised and heavily-populated of the wards within the district. 
+The [population](https://censusresults.nsonepal.gov.np/) of the affected wards in Dhading district is `r filter(population_projections, district == "Dhading") %>% {sum(.$projection_2026_population_total)}  |> format(big.mark = ",")`. Of the `r census_flat |> filter(district == "Dhading") |> nrow()` wards in Dhading district, `r differences |> filter(district == "Dhading") |> nrow()` have been affected by the flooding, according to the NDRRMA. 
+
+17.19% (14,375) out of the 83,622 [households](https://censusresults.nsonepal.gov.np/) in Dhading are in the poorest quintile of households nationally, below the average for Nepal. As can be seen from the map, the affected wards along the river are home to numerous settlements, though all still much smaller than the district seat in Dhading Besi. 
 
 
 ```{r eval=FALSE}
@@ -266,13 +267,29 @@ census_working |>
 
 <br>
 
-[![](./plots/nuwakot_poorest_quintile.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/nuwakot_poorest_quintile.png)
+[![](./plots/dhading_poorest_quintile.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/dhading_poorest_quintile.png)
 
 <br>
 
-The relative affluence (compared to the other wards within the district) and commercial importance of the affected wards not only means that there will be outsized economic impacts, but also that the number of poor persons most vulnerable to economic shocks will be the greatest. There are 5,985 households or 24,507 within the affected wards who are in the poorest quintile of households nationally. 
+The poorest parts of the district are in the south of Benighat Rorang. Although Benighat Rorang-8 is quite poor, it is only marginally affected and had very limited exposure to the river. 2,976 (20.7%) out of the 14,375 persons in the poorest quintile live in the affected wards. 
 
-As of the 2021 Census, there were `r filter(census_flat, district == "Nuwakot")  %>% {sum(.$population_with_disabilities, na.rm = TRUE)} |> format(big.mark = ",")` people with disabilities in the district, though it should be noted that this figure relies on self-reporting, so the actual number might be much higher.
+
+```{r eval=FALSE}
+census_flat |> 
+  left_join(
+    wards_joined |>
+      st_drop_geometry() |> 
+      select(adm3_pcode, ward, rdna_affected) |> 
+      mutate(rdna_affected = ifelse(rdna_affected == 0, NA_real_, rdna_affected)), 
+    by = c("adm3_pcode", "ward")
+  ) |> 
+  group_by(rdna_affected) |> 
+  filter(district == "Dhading") |> 
+  summarise(poorest_quintile_count = sum(wealth_quintile_poorest_quintile_count, na.rm = TRUE))
+```
+
+
+As of the 2021 Census, there were `r filter(census_flat, district == "Dhading")  %>% {sum(.$population_with_disabilities, na.rm = TRUE)} |> format(big.mark = ",")` people with disabilities in the district, though it should be noted that this figure relies on self-reporting, so the actual number might be much higher.
 
 Clicking on any of the maps will lead you to a larger version of the map. 
 
@@ -281,12 +298,12 @@ Clicking on any of the maps will lead you to a larger version of the map.
 
 # Needs
 
-[![](./plots/nuwakot_impacted_buildings.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/nuwakot_impacted_buildings.png)
+[![](./plots/dhading_impacted_buildings.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/dhading_impacted_buildings.png)
 
 
 <br>
 
-Based on the NDRRMA Rapid Disaster Needs Assessment, `r filter(municipal_damage_losses, district == "Nuwakot") %>% {sum(.$impacted_buildings, na.rm = TRUE)} |> format(big.mark = ",")` buildings were damaged in the floods. This damage to housing private buildings has affected `r filter(municipal_damage_losses, district == "Nuwakot") %>% {sum(.$impacted_population_total, na.rm = TRUE)} |> format(big.mark = ",")` people. Kispang-5 had the highest number of damaged buildings. 
+Based on the NDRRMA Rapid Disaster Needs Assessment, `r filter(municipal_damage_losses, district == "Dhading") %>% {sum(.$impacted_buildings, na.rm = TRUE)} |> format(big.mark = ",")` buildings were damaged in the floods. This damage to housing private buildings has affected `r filter(municipal_damage_losses, district == "Dhading") %>% {sum(.$impacted_population_total, na.rm = TRUE)} |> format(big.mark = ",")` people. Kispang-5 had the highest number of damaged buildings. 
 
 Bidur municipality reported the highest number of affected businesses and the greatest number of total damage and lost household assets across all affected municipalities. 
 
@@ -294,7 +311,7 @@ Bidur municipality reported the highest number of affected businesses and the gr
 
 ```{r}
 municipal_damage_losses |> 
-  filter(district == "Nuwakot" & !is.na(total_damage_including_household_assets_npr_crore)) |> 
+  filter(district == "Dhading" & !is.na(total_damage_including_household_assets_npr_crore)) |> 
   select(municipality, 
          Businesses_affected = estimated_affected_establishments, 
          Total_damage_incl._households_assets_npr_crore = total_damage_including_household_assets_npr_crore) |> 
@@ -309,11 +326,25 @@ municipal_damage_losses |>
 
 <br>
 
-In contrast, agricultural land was most affected further downstream, primarily in Belkotgadhi-7, Bidur-3 and Bidur-6. 79% of Belkotgadhi and 52% of Bidur's working populations are employed in the agricultural sector. 
+
+277 hectares of agricultural land was impacted by the flooding. 
 
 <br>
 
-[![](./plots/nuwakot_cadastral_affected.png)](https://raw.githubusercontent.com/nepal-rasuwa-trishuli-floods-undac/nepal_floods_reports/main/plots/nuwakot_cadastral_affected.png)
+```{r}
+municipal_damage_losses |> 
+  filter(district == "Dhading") |> 
+  replace_na(list(paddy_affected_hectares = 0, 
+                  vegetables_affected_hectares = 0)) |> 
+  mutate(total_affected_hectares = paddy_affected_hectares + vegetables_affected_hectares) |> 
+  filter(total_affected_hectares > 0) |> 
+  select(municipality, total_affected_hectares) |>
+  arrange(desc(total_affected_hectares)) |> 
+  kable(caption = "Total affected hectares of agricultural land") |> 
+  kable_classic(full_width = F) |> 
+  kable_styling(bootstrap_options = "striped")
+```
+
 
 
 <br><br><br>
@@ -321,7 +352,7 @@ In contrast, agricultural land was most affected further downstream, primarily i
 # Response
 
 
-[![NDRRMA 5Ws 20260918](./plots/nuwakot_municipality_reached_powerbi.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
+[![NDRRMA 5Ws 20260918](./plots/dhading_municipality_reached_powerbi.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
 
 <br>
 
@@ -331,7 +362,7 @@ Clicking on any of the 5W maps and tables will lead to the 5Ws PowerBI dashboard
 
 <br>
 
-[![NDRRMA 5Ws 20260918](./plots/nuwakot_reached_by_cluster.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
+[![NDRRMA 5Ws 20260918](./plots/dhading_reached_by_cluster.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
 
 
 <br>
@@ -371,11 +402,11 @@ consolidated |>
 
 ## Agency presence
 
-Agency presence is highest in Bidur, the district seat and the most affected part of the district. 
+Agency presence is highest Gajuri, though there are 18 Lead Agencies and 13 Implementing Partners in Dhading, far fewer than the 45 ans 34 in Nuwakot and the 32 ans 23 in Rasuwa.  
 
 <br>
 
-[![NDRRMA 5Ws 20260918](./plots/nuwakot_agencies_powerbi.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
+[![NDRRMA 5Ws 20260918](./plots/dhading_agencies_powerbi.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
 
 
 
@@ -388,7 +419,7 @@ Agency presence is highest in Bidur, the district seat and the most affected par
 
 ```{r}
 census_flat |> 
-  filter(district == "Nuwakot") |>
+  filter(district == "Dhading") |>
   left_join(
     read_csv("./data/population_projections_2026_affected_wards_flat.csv") |> 
       select(
@@ -428,6 +459,7 @@ Variables include a breakdown of housing materials, wealth quintile, school atte
 
 ### [Logistics Cluster Access Map](https://logie.logcluster.org/?op=npl)
 Updated regularly. 
+
 
 
 

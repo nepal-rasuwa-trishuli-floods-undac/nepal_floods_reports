@@ -194,7 +194,7 @@ census_flat <- cbind(
 
 # Using this temporarily until the population figures are resolved
 differences <- read_csv("./data/differences_between_flash_appeal_and_rdna_affected_wards.csv") |> 
-  mutate(match3 = paste0(adm2_pcode, adm3_pcode, ward))
+  mutate(match3 = paste0(adm2_pcode, adm3_pcode, ward)) 
 
 damage_points <- read_xlsx("./data/Consolidated Damage.xlsx") |> 
   clean_names() |> 
@@ -242,7 +242,6 @@ ward_cadastral <- read_csv("./data/ward_cadastral_damage.csv")
 ```
 
 
-
 # Plotting preparation
 
 ```{r capitals}
@@ -279,7 +278,6 @@ image_write((image_append(
 # Population
 
 
-
 ```{r}
 plot_ward_population <- function(district_name) {
   # census_working or census_flat will work 
@@ -298,7 +296,7 @@ plot_ward_population <- function(district_name) {
     ) |>
   st_as_sf() |> 
   ggplot() +
-  geom_sf(data = adm3, alpha = .25, linewidth = 1, colour = "grey70", fill = NA) +
+  geom_sf(data = adm3, alpha = .25, linewidth = .5, colour = "grey70", fill = NA) +
   geom_sf_text(data = adm3 |> filter(adm2_name == district_name), 
             aes(label = adm3_name),
             alpha = .5
@@ -367,6 +365,13 @@ nuwakot_population_map <- plot_ward_population("Nuwakot") +
   labs(subtitle = "17 wards affected in Nuwakot. District Headquarters labelled in red.")
 
 ggsave("./plots/nuwakot_population_map.png", height = 8.27, width = 11.69, units = "in")
+
+dhading_population_map <- plot_ward_population("Dhading") +
+  coord_sf(xlim = c(84.6, 85.3), ylim = c(27.68, 28.32), expand = TRUE) + 
+  labs(subtitle = "18 wards affected in Dhading. District Headquarters labelled in red.")
+
+ggsave("./plots/dhading_population_map.png", dhading_population_map,
+       height = 8.27, width = 11.69, units = "in")
 ```
 
 
@@ -452,6 +457,13 @@ rasuwa_poorest_quintile <- plot_poorest_quintile("Rasuwa") +
 
 ggsave("./plots/rasuwa_poorest_quintile.png", rasuwa_poorest_quintile,
        height = 8.27, width = 11.69, units = "in")
+
+dhading_poorest_quintile <- plot_poorest_quintile("Dhading") +
+  coord_sf(xlim = c(84.6, 85.3), ylim = c(27.68, 28.32), expand = TRUE) + 
+  labs(subtitle = "18 wards affected in Dhading. District Headquarters labelled in red.")
+
+ggsave("./plots/dhading_poorest_quintile.png", dhading_poorest_quintile,
+       height = 8.27, width = 11.69, units = "in")
 ```
 
 
@@ -470,7 +482,7 @@ plot_impacted_buildings <- function(district_name) {
                                       paste0(ward, "\n", impacted_buildings))) |> 
     st_as_sf() |> 
     ggplot() +
-    geom_sf(data = adm3, alpha = .25, linewidth = .5, colour = "grey70", fill = NA) +
+    geom_sf(data = adm3, alpha = .25, linewidth = .75, colour = "grey70", fill = NA) +
     geom_sf_text(data = adm3 |> filter(adm2_name == district_name), 
               aes(label = adm3_name),
               alpha = .5
@@ -541,6 +553,13 @@ nuwakot_impacted_buildings <- plot_impacted_buildings("Nuwakot") +
 
 ggsave("./plots/nuwakot_impacted_buildings.png", nuwakot_impacted_buildings,
        height = 8.27, width = 11.69, units = "in")
+
+dhading_impacted_buildings <- plot_impacted_buildings("Dhading") + 
+  coord_sf(xlim = c(84.6, 85.1), ylim = c(27.7, 27.9), expand = TRUE) + 
+  labs(subtitle = "1,451	buildings damaged in Dhading.")
+
+ggsave("./plots/dhading_impacted_buildings.png", dhading_impacted_buildings,
+       height = 6.27, width = 11.69, units = "in")
 ```
 
 
@@ -626,6 +645,8 @@ nuwakot_cadastral_affected <- plot_ward_cadastral("Nuwakot") +
 
 ggsave("./plots/nuwakot_cadastral_affected.png", nuwakot_cadastral_affected,
        height = 8.27, width = 11.69, units = "in")
+
+
 ```
 
 
