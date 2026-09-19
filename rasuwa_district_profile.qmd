@@ -1,7 +1,7 @@
 ---
 title: "Rasuwa District Profile"
 author: "UN Nepal & iMMAP"
-date-modified: "17 September 2026"
+date-modified: "18 September 2026"
 execute: 
   echo: false
 ---
