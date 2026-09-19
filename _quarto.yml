@@ -4,6 +4,7 @@ project:
   render:
     - rasuwa_district_profile.qmd
     - nuwakot_district_profile.qmd
+    - dhading_district_profile.qmd
 
 website:
   navbar:
@@ -17,6 +18,8 @@ website:
           text: Rasuwa
         - href: nuwakot_district_profile.qmd
           text: Nuwakot
+        - href: dhading_district_profile.qmd
+          text: Dhading
         
     right:
         - icon: github

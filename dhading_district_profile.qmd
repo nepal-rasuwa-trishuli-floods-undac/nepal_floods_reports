@@ -183,7 +183,7 @@ census_flat <- cbind(
     mutate(match1 = paste0(adm2_pcode, adm3_pcode, ward)),
   read_csv("./data/nepal_census2021_ward_level_individual_tables_bagmati_gandaki_flat.csv") |> 
     mutate(match2 = paste0(adm2_pcode, adm3_pcode, ward)) |> 
-    select(-c(province:ward), -total_households)
+    select(-c(province:ward), -total_households, -rdna_affected)
 )
 
 
@@ -213,7 +213,7 @@ census_working <- census_flat |>
            drinking_water_covered_well_kuwa, 
          no_toilet_public_toilet = toilet_no_toilet + toilet_public
            ) |>
-  select(province, district, municipality, adm1_pcode:ward,
+  select(province, district, municipality, adm1_pcode:ward, rdna_affected,
          total_households, population_total, 
          average_household_size,
          population_with_disabilities, 
@@ -245,9 +245,9 @@ population_projections <- read_csv("./data/population_projections_2026_affected_
 <br>
 
 
-The [population](https://censusresults.nsonepal.gov.np/) of the affected wards in Dhading district is `r filter(population_projections, district == "Dhading") %>% {sum(.$projection_2026_population_total)}  |> format(big.mark = ",")`. Of the `r census_flat |> filter(district == "Dhading") |> nrow()` wards in Dhading district, `r differences |> filter(district == "Dhading") |> nrow()` have been affected by the flooding, according to the NDRRMA. 
+The [population](https://censusresults.nsonepal.gov.np/) of the affected wards in Dhading district is `r filter(population_projections, district == "Dhading") %>% {sum(.$projection_2026_population_total)}  |> format(big.mark = ",")`. Of the `r census_flat |> filter(district == "Dhading") |> nrow()` wards in Dhading district, `r differences |> filter(district == "Dhading") |> nrow()` have been affected by the flooding, according to the NDRRMA. As can be seen from the map, the affected wards along the river are home to numerous settlements, though all still much smaller than the district seat in Dhading Besi. 
 
-17.19% (14,375) out of the 83,622 [households](https://censusresults.nsonepal.gov.np/) in Dhading are in the poorest quintile of households nationally, below the average for Nepal. As can be seen from the map, the affected wards along the river are home to numerous settlements, though all still much smaller than the district seat in Dhading Besi. 
+17.19% (14,375) out of the 83,622 [households](https://censusresults.nsonepal.gov.np/) in Dhading are in the poorest quintile of households nationally, below the average for Nepal. 
 
 
 ```{r eval=FALSE}
@@ -261,6 +261,9 @@ census_working |>
   mutate(population_poorest_quintile = wealth_quintile_poorest_quintile_count * 
            average_household_size) %>%
   {sum(.$population_poorest_quintile)}
+
+census_working |> filter(district == "Dhading" & rdna_affected == 1)  %>%
+  {sum(.$population_with_disabilities)}
 ```
 
 
@@ -271,7 +274,7 @@ census_working |>
 
 <br>
 
-The poorest parts of the district are in the south of Benighat Rorang. Although Benighat Rorang-8 is quite poor, it is only marginally affected and had very limited exposure to the river. 2,976 (20.7%) out of the 14,375 persons in the poorest quintile live in the affected wards. 
+The poorest parts of the district are in the south of Benighat Rorang and in the upper reaches of the Rubi Valley. Although Benighat Rorang-8 is quite poor, it is only marginally affected and had very limited exposure to the river. 2,976 (20.7%) out of the 14,375 persons in the poorest quintile live in the affected wards. 
 
 
 ```{r eval=FALSE}
@@ -286,15 +289,25 @@ census_flat |>
   group_by(rdna_affected) |> 
   filter(district == "Dhading") |> 
   summarise(poorest_quintile_count = sum(wealth_quintile_poorest_quintile_count, na.rm = TRUE))
+
+census_working |> 
+  group_by(rdna_affected) |> 
+  filter(district == "Dhading") |> 
+  summarise(poorest_quintile_count = sum(wealth_quintile_poorest_quintile_count, na.rm = TRUE))
+
+impacted_buildings |> 
+  filter(adm2_pcode == "NP0330") |> 
+  arrange(desc(impacted_buildings))
 ```
 
 
-As of the 2021 Census, there were `r filter(census_flat, district == "Dhading")  %>% {sum(.$population_with_disabilities, na.rm = TRUE)} |> format(big.mark = ",")` people with disabilities in the district, though it should be noted that this figure relies on self-reporting, so the actual number might be much higher.
+As of the 2021 Census, there were `r filter(census_flat, district == "Dhading" & rdna_affected == 1)  %>% {sum(.$population_with_disabilities, na.rm = TRUE)} |> format(big.mark = ",")` people with disabilities in the district, though it should be noted that this figure relies on self-reporting, so the actual number might be much higher.
 
 Clicking on any of the maps will lead you to a larger version of the map. 
 
 
 <br><br><br>
+
 
 # Needs
 
@@ -303,9 +316,7 @@ Clicking on any of the maps will lead you to a larger version of the map.
 
 <br>
 
-Based on the NDRRMA Rapid Disaster Needs Assessment, `r filter(municipal_damage_losses, district == "Dhading") %>% {sum(.$impacted_buildings, na.rm = TRUE)} |> format(big.mark = ",")` buildings were damaged in the floods. This damage to housing private buildings has affected `r filter(municipal_damage_losses, district == "Dhading") %>% {sum(.$impacted_population_total, na.rm = TRUE)} |> format(big.mark = ",")` people. Kispang-5 had the highest number of damaged buildings. 
-
-Bidur municipality reported the highest number of affected businesses and the greatest number of total damage and lost household assets across all affected municipalities. 
+Based on the NDRRMA Rapid Disaster Needs Assessment, `r filter(municipal_damage_losses, district == "Dhading") %>% {sum(.$impacted_buildings, na.rm = TRUE)} |> format(big.mark = ",")` buildings were damaged in the floods. This damage to housing private buildings has affected `r filter(municipal_damage_losses, district == "Dhading") %>% {sum(.$impacted_population_total, na.rm = TRUE)} |> format(big.mark = ",")` people. Benighat Rorang-3 has the highest number of damaged buildings out of all the wards in Dhading. 
 
 <br>
 
@@ -327,7 +338,7 @@ municipal_damage_losses |>
 <br>
 
 
-277 hectares of agricultural land was impacted by the flooding. 
+277 hectares of agricultural land was impacted by the flooding. Considering that Dhading was further downstream than some of the other affected areas, this is considerably less than the 1,228 hectares affected in Nuwakot and less than the 283 hectares in Rasuwa. 
 
 <br>
 
@@ -337,12 +348,54 @@ municipal_damage_losses |>
   replace_na(list(paddy_affected_hectares = 0, 
                   vegetables_affected_hectares = 0)) |> 
   mutate(total_affected_hectares = paddy_affected_hectares + vegetables_affected_hectares) |> 
-  filter(total_affected_hectares > 0) |> 
+  filter(total_affected_hectares > 0) |>
   select(municipality, total_affected_hectares) |>
   arrange(desc(total_affected_hectares)) |> 
   kable(caption = "Total affected hectares of agricultural land") |> 
   kable_classic(full_width = F) |> 
   kable_styling(bootstrap_options = "striped")
+```
+
+<br><br><br>
+
+## Comparison between districts
+
+```{r}
+municipal_damage_losses |> 
+  group_by(district) |> 
+  summarise(
+    number_of_affected_wards = sum(number_of_affected_wards, na.rm = TRUE), 
+    impacted_buildings = sum(impacted_buildings, na.rm = TRUE),
+    paddy_affected_hectares = sum(paddy_affected_hectares, na.rm = TRUE), 
+    vegetables_affected_hectares = sum(vegetables_affected_hectares, na.rm = TRUE)
+  ) |> 
+  mutate(agricultural_land_affected_ha = paddy_affected_hectares + vegetables_affected_hectares) |> 
+  select(district, number_of_affected_wards, impacted_buildings, agricultural_land_affected_ha) |> 
+  filter(district != "Tanahu") |> 
+  pivot_longer(!district, 
+               names_to = "variable", 
+               values_to = "value") |> 
+  mutate(variable = fct_relevel(variable, 
+                                c("impacted_buildings", 
+                                  "agricultural_land_affected_ha", 
+                                  "number_of_affected_wards"))) |> 
+  mutate(variable = str_to_title(str_replace_all(variable, "_", " "))) |>
+  mutate(district = fct_relevel(district, 
+                                c("Nuwakot", "Rasuwa", "Dhading", "Gorkha", "Chitawan"))) |> 
+  ggplot(aes(x = value, y = fct_rev(district), fill = fct_rev(variable))) + 
+  geom_col() + 
+  geom_text(aes(label = comma(value)),
+            hjust = "inward") +
+  scale_fill_manual(values = c("#cee3a0","#338c46", "#72bf44")) +
+  facet_wrap(~ variable, scales = "free_x") + 
+  scale_x_continuous(labels = comma) + 
+  labs(x = "Hectares affected / Number of imapcted buildings / Number of wards", y = "", 
+       title = "Comparison of Flood damage between districts", 
+       caption = "Source: NDRRMA Rapid Disaster Needs Assessment") + 
+  theme(legend.position = "none", 
+        strip.background = element_rect(fill = "black")) 
+  
+
 ```
 
 
@@ -356,7 +409,7 @@ municipal_damage_losses |>
 
 <br>
 
-Bidur Municipality has been the focus of response activities in Nuwakot. From the beneficiary frequencies table below (which is inclusive of double counting, and thus indicative of where agencies have focused their resources), we can see that affected persons have been reached primarily by WASH activities. 
+Galchhi and Benighat Rorang are the focuses of the response activities in Dhading, in spite of damage being much greater in Benighat Rorang. From the beneficiary frequencies table below (which is inclusive of double counting, and thus indicative of where agencies have focused their resources), we can see that affected persons have been reached by both WASH and Shelter activities. 
 
 Clicking on any of the 5W maps and tables will lead to the 5Ws PowerBI dashboard. 
 
@@ -365,9 +418,22 @@ Clicking on any of the 5W maps and tables will lead to the 5Ws PowerBI dashboard
 [![NDRRMA 5Ws 20260918](./plots/dhading_reached_by_cluster.png)](https://app.powerbi.com/view?r=eyJrIjoiZTQ0MGE1NWEtOWJlMi00YmU4LWFhYjMtMTg0OTRmNTRmMGQ1IiwidCI6IjBmOWUzNWRiLTU0NGYtNGY2MC1iZGNjLTVlYTQxNmU2ZGM3MCIsImMiOjh9)
 
 
+```{r}
+ward_reporting <- consolidated |> 
+  filter(district == "Dhading") |> 
+  filter(individuals_reached > 0) |> 
+  mutate(has_ward = ifelse(ward > 20 | is.na(ward), "no", "yes")) |> 
+  group_by(has_ward) |> 
+  summarise(individuals_reached = sum(individuals_reached, na.rm = TRUE))
+
+
+```
+
+
+
 <br>
 
-Nuwakot currently has the best granular reporting out of the affected districts: 62.6% of the beneficiary frequencies reached have been reported at the ward level. Of these beneficiary frequencies, 64.6% of them were in wards 2, 4, 5 and 7 in Bidur. All these wards are in the urban core of Bidur or surround it, and are the location of numerous holding centres for displaced persons. However, relatively few activities have been reported at site level so it is not possible to determine how much of this higher level of support in Bidur is due to its comparative accessibility or due to the presence of numerous holding centres. 
+Granular reporting is currently quite poor in Dhading: `r round((ward_reporting |> filter(has_ward == "yes") |> pull(individuals_reached)) / (ward_reporting %>% {sum(.$individuals_reached)}) * 100, 2)`% of the beneficiary frequencies were reported at the ward level. To date, no beneficiaries have been reported in Benighat Rorang-3, the most affected ward, and only 50 were reported in Benighat Rorang-7, the second-most affected ward. 
 
 
 ```{r eval=FALSE}
@@ -429,8 +495,12 @@ census_flat |>
         affected, adm3_pcode, ward
       ),
     by = c("adm3_pcode", "ward")) |>
+  left_join(impacted_buildings |> 
+              select(adm3_pcode, ward, impacted_buildings), 
+            by = c("adm3_pcode", "ward")) |> 
   filter(affected == "affected") |> 
   select(municipality, ward,
+         impacted_buildings, 
          total_households, population_2026, sex_ratio, 
          population_density, 
          population_2026_male, 

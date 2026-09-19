@@ -183,9 +183,8 @@ census_flat <- cbind(
     mutate(match1 = paste0(adm2_pcode, adm3_pcode, ward)),
   read_csv("./data/nepal_census2021_ward_level_individual_tables_bagmati_gandaki_flat.csv") |> 
     mutate(match2 = paste0(adm2_pcode, adm3_pcode, ward)) |> 
-    select(-c(province:ward), -total_households)
+    select(-c(province:ward), -total_households, -rdna_affected)
 )
-
 
 # Using this temporarily until the population figures are resolved
 differences <- read_csv("./data/differences_between_flash_appeal_and_rdna_affected_wards.csv") |> 
@@ -288,6 +287,49 @@ municipal_damage_losses |>
  # flextable::set_caption(as_paragraph(as_chunk("Economic impacts and losses in Rasuwa")))
 ```
 
+
+<br><br><br>
+
+## Comparison between districts
+
+```{r}
+municipal_damage_losses |> 
+  group_by(district) |> 
+  summarise(
+    number_of_affected_wards = sum(number_of_affected_wards, na.rm = TRUE), 
+    impacted_buildings = sum(impacted_buildings, na.rm = TRUE),
+    paddy_affected_hectares = sum(paddy_affected_hectares, na.rm = TRUE), 
+    vegetables_affected_hectares = sum(vegetables_affected_hectares, na.rm = TRUE)
+  ) |> 
+  mutate(agricultural_land_affected_ha = paddy_affected_hectares + vegetables_affected_hectares) |> 
+  select(district, number_of_affected_wards, impacted_buildings, agricultural_land_affected_ha) |> 
+  filter(district != "Tanahu") |> 
+  pivot_longer(!district, 
+               names_to = "variable", 
+               values_to = "value") |> 
+  mutate(variable = fct_relevel(variable, 
+                                c("impacted_buildings", 
+                                  "agricultural_land_affected_ha", 
+                                  "number_of_affected_wards"))) |> 
+  mutate(variable = str_to_title(str_replace_all(variable, "_", " "))) |>
+  mutate(district = fct_relevel(district, 
+                                c("Nuwakot", "Rasuwa", "Dhading", "Gorkha", "Chitawan"))) |> 
+  ggplot(aes(x = value, y = fct_rev(district), fill = fct_rev(variable))) + 
+  geom_col() + 
+  geom_text(aes(label = comma(value)),
+            hjust = "inward") +
+  scale_fill_manual(values = c("#cee3a0","#338c46", "#72bf44")) +
+  facet_wrap(~ variable, scales = "free_x") + 
+  scale_x_continuous(labels = comma) + 
+  labs(x = "Hectares affected / Number of imapcted buildings / Number of wards", y = "", 
+       title = "Comparison of Flood damage between districts", 
+       caption = "Source: NDRRMA Rapid Disaster Needs Assessment") + 
+  theme(legend.position = "none", 
+        strip.background = element_rect(fill = "black")) 
+  
+
+```
+
 <br><br><br>
 
 # Response
@@ -331,6 +373,7 @@ Agency presence is highest in Uttargaya, the most accessible part of the distric
 ## Interactive Reference Table
 
 
+
 ```{r}
 census_flat |> 
   filter(district == "Rasuwa") |>
@@ -343,8 +386,12 @@ census_flat |>
         affected, adm3_pcode, ward
       ),
     by = c("adm3_pcode", "ward")) |>
+  left_join(impacted_buildings |> 
+              select(adm3_pcode, ward, impacted_buildings), 
+            by = c("adm3_pcode", "ward")) |> 
   filter(affected == "affected") |> 
   select(municipality, ward,
+         impacted_buildings, 
          total_households, population_2026, sex_ratio, 
          population_density, 
          population_2026_male, 
